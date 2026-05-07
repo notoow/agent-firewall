@@ -9,6 +9,7 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 from agent_firewall.analyzer import analyze, redact_result
+from agent_firewall.audit import append_audit_record, audit_record
 from agent_firewall.inputs import InputParseError, parse_analysis_input, parse_jsonl_input
 from agent_firewall.models import AnalysisResult, Finding
 from agent_firewall.policy import load_policy, maybe_load_policy
@@ -55,6 +56,7 @@ def run(argv: list[str] | None = None) -> int:
 
     result = scan_payload(payload, policy=policy, custom_rules=custom_rules)
     try:
+        maybe_write_audit(args, result, mode="scan", input_text=raw, source_path=args.input)
         emit_output(render_result(result, args), args.output)
     except OSError as exc:
         print(f"agent-firewall: could not write output: {exc}", file=sys.stderr)
@@ -109,6 +111,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--compact", action="store_true", help="Emit compact JSON or SARIF for machine output.")
     parser.add_argument("--output", default=None, help="Write the report to a file instead of stdout.")
+    parser.add_argument("--audit-log", default=None, help="Append redacted audit records to a JSONL file.")
     parser.add_argument("--watch", action="store_true", help="Follow a JSONL file and scan records as they are appended.")
     parser.add_argument("--watch-from-end", action="store_true", help="Start watching from the current end of the file.")
     parser.add_argument(
@@ -189,6 +192,29 @@ def emit_output(text: str, output: str | None, *, append: bool = False) -> None:
     print(text)
 
 
+def maybe_write_audit(
+    args: argparse.Namespace,
+    result: AnalysisResult,
+    *,
+    mode: str,
+    input_text: str | None = None,
+    source_path: str | None = None,
+    line_number: int | None = None,
+) -> None:
+    if not args.audit_log:
+        return
+    append_audit_record(
+        args.audit_log,
+        audit_record(
+            result,
+            mode=mode,
+            input_text=input_text,
+            source_path=source_path,
+            line_number=line_number,
+        ),
+    )
+
+
 def watch_jsonl_file(path: Path, *, args: argparse.Namespace, policy: object, custom_rules: object) -> int:
     position = path.stat().st_size if args.watch_from_end else 0
     buffer = ""
@@ -266,6 +292,11 @@ def process_watch_chunk(
             print(f"agent-firewall: invalid JSONL watch input at line {line_number}: {exc}", file=sys.stderr)
             return pending, WatchChunkResult(processed_lines=processed + 1, exit_code=1)
         result = scan_payload(payload, policy=policy, custom_rules=custom_rules)
+        try:
+            maybe_write_audit(args, result, mode="watch", input_text=line, source_path=args.input, line_number=line_number)
+        except OSError as exc:
+            print(f"agent-firewall: could not write audit log: {exc}", file=sys.stderr)
+            return pending, WatchChunkResult(processed_lines=processed + 1, exit_code=1)
         if args.watch_report == "all" or result.verdict != "pass":
             try:
                 emit_watch_result(result, args=args, line_number=line_number)

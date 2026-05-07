@@ -30,6 +30,10 @@ flowchart LR
 
 AgentFirewall treats findings as sensitive data. Reports redact likely secrets in evidence excerpts and source names before returning CLI text, JSON, SARIF, REST API responses, or MCP tool results.
 
+## Audit Trail
+
+CLI and watch mode can append redacted JSONL audit records with `--audit-log`. Each record stores a verdict summary, redacted findings, source location, and an input hash instead of raw input text.
+
 ## Why API And MCP
 
 REST API is best for service integration:
@@ -83,7 +87,7 @@ Useful `kind` values:
 1. Deterministic rules and redaction: fast, explainable, safe default.
 2. Per-workspace policy: approved domains, allowed secret names, protected paths.
 3. Human approval gates: block destructive commands and outbound transfers until reviewed.
-4. Signed audit log: store verdicts, redacted evidence, tool event hashes.
+4. Signed audit log: add tamper-evident chaining and signing to the redacted audit records.
 5. LLM-assisted review: only for ambiguous cases, never as the only secret detector.
 6. MCP reputation layer: score MCP servers by source, scopes, package pinning, and behavior.
 

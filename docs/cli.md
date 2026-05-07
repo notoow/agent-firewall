@@ -93,6 +93,17 @@ Useful options:
 - `--watch-interval 0.25`: adjust polling frequency.
 - `--watch-idle-timeout 5`: stop after idle time, useful for automation smoke tests.
 
+## Audit Log
+
+Use `--audit-log` to append redacted JSONL records for later review:
+
+```bash
+agent-firewall-scan agent-events.json --audit-log .agent-firewall/audit.jsonl
+agent-firewall-watch agent-events.jsonl --audit-log .agent-firewall/audit.jsonl
+```
+
+Audit records include the verdict, score, finding IDs, redacted findings, source path, source line for watch mode, and a SHA-256 fingerprint of the scanned input. They do not store raw input text.
+
 ## CI Exit Codes
 
 By default, scans exit with `0` so local exploration does not break scripts unexpectedly.
