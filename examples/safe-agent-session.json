@@ -1,0 +1,22 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Run the unit tests and summarize failures."
+    }
+  ],
+  "events": [
+    {
+      "kind": "shell",
+      "command": "python -m pytest"
+    },
+    {
+      "kind": "file_write",
+      "file_path": "src/app.py"
+    }
+  ],
+  "context": {
+    "agent": "codex",
+    "workspace": "demo"
+  }
+}

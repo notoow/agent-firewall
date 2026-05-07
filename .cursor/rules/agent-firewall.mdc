@@ -1,0 +1,18 @@
+---
+alwaysApply: true
+description: Use AgentFirewall before high-risk AI coding agent actions.
+---
+
+# AgentFirewall
+
+Use `AGENTS.md` as the shared instruction source for this repository.
+
+Before high-risk actions, call the `agent-firewall` MCP server tool `analyze_agent_security` when available. High-risk actions include secret reads, `.env` output, destructive filesystem operations, git history rewrites, package execution, remote script execution, outbound data transfers, and MCP server or connector changes.
+
+If MCP is unavailable, use the CLI:
+
+```powershell
+python -m agent_firewall.cli examples/risky-agent-session.json
+```
+
+Never place raw secrets in generated code comments, summaries, commit messages, or issue replies.

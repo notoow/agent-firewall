@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "agent-firewall": {
+      "type": "stdio",
+      "command": "agent-firewall-mcp",
+      "args": []
+    }
+  }
+}
