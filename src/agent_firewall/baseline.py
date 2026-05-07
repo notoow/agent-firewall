@@ -44,10 +44,25 @@ def write_baseline(path: str | Path, result: AnalysisResult) -> None:
 
 def load_baseline(path: str | Path) -> set[str]:
     data = json.loads(Path(path).read_text(encoding="utf-8-sig"))
+    return baseline_ids_from_data(data, require_schema=True)
+
+
+def baseline_ids_from_data(data: Any, *, require_schema: bool = False) -> set[str]:
+    if data is None:
+        return set()
+    if isinstance(data, list):
+        if not all(isinstance(item, str) for item in data):
+            raise ValueError("baseline finding ID list must contain only strings")
+        return set(data)
     if not isinstance(data, dict):
-        raise ValueError("baseline must be a JSON object")
-    if data.get("schema") != BASELINE_SCHEMA:
+        raise ValueError("baseline must be a JSON object or a list of finding IDs")
+
+    schema = data.get("schema")
+    if require_schema and schema != BASELINE_SCHEMA:
         raise ValueError(f"baseline schema must be {BASELINE_SCHEMA}")
+    if schema is not None and schema != BASELINE_SCHEMA:
+        raise ValueError(f"baseline schema must be {BASELINE_SCHEMA}")
+
     finding_ids = data.get("finding_ids")
     if not isinstance(finding_ids, list) or not all(isinstance(item, str) for item in finding_ids):
         raise ValueError("baseline finding_ids must be a list of strings")

@@ -3,7 +3,14 @@ import json
 import pytest
 
 from agent_firewall.analyzer import analyze, redact_result
-from agent_firewall.baseline import BASELINE_SCHEMA, apply_baseline, baseline_from_result, load_baseline, write_baseline
+from agent_firewall.baseline import (
+    BASELINE_SCHEMA,
+    apply_baseline,
+    baseline_from_result,
+    baseline_ids_from_data,
+    load_baseline,
+    write_baseline,
+)
 
 
 def risky_result():
@@ -25,6 +32,11 @@ def test_write_and_load_baseline(tmp_path) -> None:
     write_baseline(path, risky_result())
 
     assert next(iter(load_baseline(path))).startswith("remote-code-exec-command")
+
+
+def test_baseline_ids_from_data_accepts_inline_finding_ids() -> None:
+    assert baseline_ids_from_data(["finding-a", "finding-b"]) == {"finding-a", "finding-b"}
+    assert baseline_ids_from_data({"finding_ids": ["finding-a"]}) == {"finding-a"}
 
 
 def test_apply_baseline_suppresses_known_findings() -> None:

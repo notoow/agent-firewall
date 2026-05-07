@@ -3,12 +3,13 @@ from __future__ import annotations
 from typing import Any
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from agent_firewall.analyzer import analyze, redact_result
+from agent_firewall.baseline import apply_baseline, baseline_ids_from_data
 from agent_firewall.discovery import discovery_manifest
-from agent_firewall.policy import maybe_load_policy
+from agent_firewall.policy import maybe_load_policy, policy_from_dict
 from agent_firewall.redaction import redact_text
 
 
@@ -24,6 +25,10 @@ class AnalyzeRequest(BaseModel):
     rules: dict[str, Any] | list[dict[str, Any]] | None = Field(
         default=None,
         description="Optional inline custom rule pack.",
+    )
+    baseline: dict[str, Any] | list[str] | None = Field(
+        default=None,
+        description="Optional baseline object or finding ID list whose findings should be suppressed.",
     )
 
 
@@ -50,9 +55,14 @@ def discovery() -> dict[str, Any]:
 
 @app.post("/v1/analyze")
 def analyze_agent_security(request: AnalyzeRequest) -> dict[str, Any]:
-    payload = request.model_dump(exclude={"policy", "rules"})
-    policy = request.policy or maybe_load_policy()
-    return redact_result(analyze(payload, policy=policy, custom_rules=request.rules)).to_dict()
+    payload = request.model_dump(exclude={"policy", "rules", "baseline"})
+    policy = policy_from_dict(request.policy) if request.policy is not None else maybe_load_policy()
+    try:
+        baseline_ids = baseline_ids_from_data(request.baseline)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=f"invalid baseline: {exc}") from exc
+    result = redact_result(analyze(payload, policy=policy, custom_rules=request.rules))
+    return apply_baseline(result, baseline_ids, policy=policy).to_dict()
 
 
 @app.post("/v1/redact")

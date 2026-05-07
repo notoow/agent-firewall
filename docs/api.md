@@ -13,6 +13,7 @@ Request:
   "events": [{"kind": "shell", "command": "rm -rf ."}],
   "policy": {"disabled_rules": []},
   "rules": {"rules": []},
+  "baseline": {"finding_ids": ["remote-code-exec-command:..."]},
   "context": {"workspace": "repo-name"}
 }
 ```
@@ -31,6 +32,8 @@ Response:
 ```
 
 Responses are redacted by default. Evidence excerpts and source fields are sanitized before they leave the API so dashboards and logs do not become another place where secrets leak.
+
+`baseline` can be either a full AgentFirewall baseline object or a direct list of finding IDs. Baseline findings are suppressed before the API returns a verdict, so host products can show failures only for newly introduced issues.
 
 Verdicts:
 

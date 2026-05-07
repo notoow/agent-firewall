@@ -6,6 +6,8 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP
 
 from agent_firewall.analyzer import analyze, redact_result
+from agent_firewall.baseline import apply_baseline, baseline_ids_from_data
+from agent_firewall.policy import maybe_load_policy, policy_from_dict
 from agent_firewall.redaction import redact_text
 
 mcp = FastMCP(
@@ -25,10 +27,13 @@ def analyze_agent_security(payload: dict[str, Any]) -> dict[str, Any]:
     {
       "text": "...",
       "messages": [{"role": "user", "content": "..."}],
-      "events": [{"kind": "shell", "command": "...", "file_path": "..."}]
+      "events": [{"kind": "shell", "command": "...", "file_path": "..."}],
+      "baseline": {"finding_ids": ["remote-code-exec-command:..."]}
     }
     """
-    return redact_result(analyze(payload, policy=payload.get("policy"), custom_rules=payload.get("rules"))).to_dict()
+    policy = policy_from_dict(payload.get("policy")) if payload.get("policy") is not None else maybe_load_policy()
+    result = redact_result(analyze(payload, policy=policy, custom_rules=payload.get("rules")))
+    return apply_baseline(result, baseline_ids_from_data(payload.get("baseline")), policy=policy).to_dict()
 
 
 @mcp.tool()

@@ -182,6 +182,8 @@ Available MCP tools:
 - `redact_sensitive_text`
 - `recommended_agent_security_controls`
 
+`analyze_agent_security` also accepts an inline `baseline` object or finding ID list, matching the CLI baseline format.
+
 Remote-style experiment:
 
 ```bash

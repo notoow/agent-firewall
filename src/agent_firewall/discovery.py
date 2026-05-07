@@ -15,6 +15,7 @@ def discovery_manifest() -> dict[str, Any]:
             "destructive-command-preflight",
             "data-exfiltration-detection",
             "mcp-tool-risk-detection",
+            "baseline-suppression",
         ],
         "rest": {
             "health": "/health",
@@ -41,6 +42,7 @@ def discovery_manifest() -> dict[str, Any]:
             "GEMINI.md",
             "agent-firewall.policy.json",
             "agent-firewall.rules.json",
+            "agent-firewall.baseline.json",
             ".mcp.json",
             ".cursor/mcp.json",
             ".cursor/rules/agent-firewall.mdc",
