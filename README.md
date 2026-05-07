@@ -213,6 +213,7 @@ AgentFirewall does not claim that a session is safe. It answers a narrower and m
 - [Rule packs](docs/rule-packs.md)
 - [API reference](docs/api.md)
 - [Agent integrations](docs/agent-integrations.md)
+- [Releasing](docs/releasing.md)
 - [MCP client config example](examples/mcp-client-config.example.json)
 
 ## Contributing
