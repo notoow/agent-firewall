@@ -11,6 +11,7 @@ from agent_firewall.models import AnalysisResult, Finding
 from agent_firewall.policy import load_policy, maybe_load_policy
 from agent_firewall.redaction import redact_text
 from agent_firewall.rulepack import load_rulepacks
+from agent_firewall.sarif import result_to_sarif
 
 
 def main() -> None:
@@ -23,14 +24,20 @@ def run(argv: list[str] | None = None) -> int:
 
     try:
         raw = read_input(args.input)
-        if args.redact:
-            print(redact_text(raw))
-            return 0
-
-        payload = json.loads(raw)
     except OSError as exc:
         print(f"agent-firewall: could not read input: {exc}", file=sys.stderr)
         return 1
+
+    if args.redact:
+        try:
+            emit_output(redact_text(raw), args.output)
+        except OSError as exc:
+            print(f"agent-firewall: could not write output: {exc}", file=sys.stderr)
+            return 1
+        return 0
+
+    try:
+        payload = json.loads(raw)
     except json.JSONDecodeError as exc:
         print(f"agent-firewall: invalid JSON input: {exc}", file=sys.stderr)
         return 1
@@ -46,12 +53,11 @@ def run(argv: list[str] | None = None) -> int:
         return 1
 
     result = analyze(payload, policy=policy, custom_rules=custom_rules)
-    if args.format == "json":
-        indent = None if args.compact else 2
-        separators = (",", ":") if args.compact else None
-        print(json.dumps(result.to_dict(), indent=indent, ensure_ascii=False, separators=separators))
-    else:
-        print(format_text_report(result, max_findings=args.max_findings))
+    try:
+        emit_output(render_result(result, args), args.output)
+    except OSError as exc:
+        print(f"agent-firewall: could not write output: {exc}", file=sys.stderr)
+        return 1
 
     return exit_code_for(result, fail_on=args.fail_on)
 
@@ -62,11 +68,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--redact", action="store_true", help="Redact stdin or file text instead of running analysis.")
     parser.add_argument(
         "--format",
-        choices=["text", "json"],
+        choices=["text", "json", "sarif"],
         default="text",
         help="Output format. Defaults to a human-readable text report.",
     )
-    parser.add_argument("--compact", action="store_true", help="Emit compact JSON when used with --format json.")
+    parser.add_argument("--compact", action="store_true", help="Emit compact JSON or SARIF for machine output.")
+    parser.add_argument("--output", default=None, help="Write the report to a file instead of stdout.")
     parser.add_argument(
         "--policy",
         default=None,
@@ -98,6 +105,30 @@ def read_input(path: str | None) -> str:
     if path:
         return Path(path).read_text(encoding="utf-8-sig")
     return sys.stdin.read()
+
+
+def render_result(result: AnalysisResult, args: argparse.Namespace) -> str:
+    if args.format == "json":
+        return format_machine_report(result.to_dict(), compact=args.compact)
+    if args.format == "sarif":
+        return format_machine_report(result_to_sarif(result), compact=args.compact)
+    return format_text_report(result, max_findings=args.max_findings)
+
+
+def format_machine_report(payload: dict, *, compact: bool = False) -> str:
+    indent = None if compact else 2
+    separators = (",", ":") if compact else None
+    return json.dumps(payload, indent=indent, ensure_ascii=False, separators=separators)
+
+
+def emit_output(text: str, output: str | None) -> None:
+    if output:
+        output_path = Path(output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_path.write_text(text + "\n", encoding="utf-8")
+        print(f"agent-firewall: wrote report to {output_path}", file=sys.stderr)
+        return
+    print(text)
 
 
 def format_text_report(result: AnalysisResult, *, max_findings: int = 5) -> str:

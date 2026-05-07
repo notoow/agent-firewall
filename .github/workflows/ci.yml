@@ -79,3 +79,16 @@ jobs:
         with:
           input: examples/safe-agent-session.json
           fail-on: block
+          format: sarif
+          output: agent-firewall.sarif
+
+      - name: Verify SARIF output
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          report = json.loads(Path("agent-firewall.sarif").read_text(encoding="utf-8"))
+          assert report["version"] == "2.1.0"
+          assert report["runs"][0]["tool"]["driver"]["name"] == "AgentFirewall"
+          PY

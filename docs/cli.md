@@ -45,6 +45,16 @@ Compact JSON:
 agent-firewall-scan examples/risky-agent-session.json --format json --compact
 ```
 
+## SARIF Output
+
+Use SARIF when you want CI systems and security dashboards to ingest AgentFirewall findings:
+
+```bash
+agent-firewall-scan examples/risky-agent-session.json --format sarif --output agent-firewall.sarif
+```
+
+`--output` writes the report to a file instead of stdout and creates parent directories when needed.
+
 ## CI Exit Codes
 
 By default, scans exit with `0` so local exploration does not break scripts unexpectedly.

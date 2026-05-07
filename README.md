@@ -80,6 +80,7 @@ For machine-readable output:
 ```bash
 agent-firewall demo --format json
 agent-firewall-scan examples/risky-agent-session.json --format json
+agent-firewall-scan examples/risky-agent-session.json --format sarif --output agent-firewall.sarif
 ```
 
 For CI:
@@ -95,6 +96,17 @@ As a GitHub Action:
   with:
     input: agent-events.json
     fail-on: block
+```
+
+For SARIF in CI:
+
+```yaml
+- uses: notoow/agent-firewall@v0.1.0
+  with:
+    input: agent-events.json
+    fail-on: block
+    format: sarif
+    output: agent-firewall.sarif
 ```
 
 With a project policy:

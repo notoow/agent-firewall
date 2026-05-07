@@ -15,13 +15,17 @@ inputs:
     required: false
     default: block
   format:
-    description: "Output format: text or json."
+    description: "Output format: text, json, or sarif."
     required: false
     default: text
   compact:
-    description: Emit compact JSON when format is json.
+    description: Emit compact JSON or SARIF for machine output.
     required: false
     default: "false"
+  output:
+    description: Optional file path to write the scan report.
+    required: false
+    default: ""
   policy:
     description: Optional path to agent-firewall.policy.json.
     required: false
@@ -51,6 +55,10 @@ runs:
 
         if [ "${{ inputs.compact }}" = "true" ]; then
           args+=("--compact")
+        fi
+
+        if [ -n "${{ inputs.output }}" ]; then
+          args+=("--output" "${{ inputs.output }}")
         fi
 
         if [ -n "${{ inputs.policy }}" ]; then

@@ -44,12 +44,24 @@ jobs:
       .github/agent-firewall-extra.rules.json
 ```
 
+## SARIF Report
+
+```yaml
+- uses: notoow/agent-firewall@v0.1.0
+  with:
+    input: agent-events.json
+    fail-on: block
+    format: sarif
+    output: agent-firewall.sarif
+```
+
 ## Inputs
 
 - `input`: path to an AgentFirewall JSON event payload. Required.
 - `fail-on`: `never`, `warn`, or `block`. Defaults to `block`.
-- `format`: `text` or `json`. Defaults to `text`.
-- `compact`: compact JSON output when `format` is `json`. Defaults to `false`.
+- `format`: `text`, `json`, or `sarif`. Defaults to `text`.
+- `compact`: compact JSON or SARIF output. Defaults to `false`.
+- `output`: optional file path to write the scan report.
 - `policy`: optional path to `agent-firewall.policy.json`.
 - `rules`: optional newline-separated list of custom rule-pack JSON files.
 - `python-command`: Python command used to install AgentFirewall. Defaults to `python`.
