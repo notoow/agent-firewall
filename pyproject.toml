@@ -52,7 +52,10 @@ Issues = "https://github.com/notoow/agent-firewall/issues"
 Security = "https://github.com/notoow/agent-firewall/security"
 
 [project.scripts]
+agent-firewall = "agent_firewall.onboarding:main"
 agent-firewall-api = "agent_firewall.api:main"
+agent-firewall-demo = "agent_firewall.onboarding:demo_main"
+agent-firewall-doctor = "agent_firewall.onboarding:doctor_main"
 agent-firewall-init = "agent_firewall.integrations:main"
 agent-firewall-mcp = "agent_firewall.mcp_server:main"
 agent-firewall-scan = "agent_firewall.cli:main"

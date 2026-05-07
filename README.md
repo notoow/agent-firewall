@@ -31,6 +31,8 @@ AgentFirewall gives agent hosts a small, explainable policy layer:
 
 ```bash
 pipx install git+https://github.com/notoow/agent-firewall.git
+agent-firewall demo
+agent-firewall doctor --target /path/to/your/project
 agent-firewall-init --target /path/to/your/project
 ```
 
@@ -60,7 +62,7 @@ python -m venv .venv
 ## CLI Demo
 
 ```bash
-agent-firewall-scan examples/risky-agent-session.json
+agent-firewall demo
 ```
 
 Example result:
@@ -76,6 +78,7 @@ Blocking risk detected. Highest severity is critical; review and mitigate before
 For machine-readable output:
 
 ```bash
+agent-firewall demo --format json
 agent-firewall-scan examples/risky-agent-session.json --format json
 ```
 
@@ -205,6 +208,7 @@ AgentFirewall does not claim that a session is safe. It answers a narrower and m
 - [Threat model](docs/threat-model.md)
 - [Architecture](docs/architecture.md)
 - [CLI](docs/cli.md)
+- [Doctor and demo](docs/doctor.md)
 - [Policy](docs/policy.md)
 - [Rule packs](docs/rule-packs.md)
 - [API reference](docs/api.md)

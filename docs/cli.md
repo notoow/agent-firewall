@@ -2,9 +2,24 @@
 
 `agent-firewall-scan` is the fastest way to try AgentFirewall locally or add it to CI.
 
+For onboarding, the top-level `agent-firewall` command includes two helpers:
+
+```bash
+agent-firewall demo
+agent-firewall doctor --target /path/to/project
+```
+
+Short aliases are also available:
+
+```bash
+agent-firewall-demo
+agent-firewall-doctor --target /path/to/project
+```
+
 ## Human-Readable Report
 
 ```bash
+agent-firewall demo
 agent-firewall-scan examples/risky-agent-session.json
 ```
 
