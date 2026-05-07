@@ -10,6 +10,7 @@ from pathlib import Path
 
 from agent_firewall.analyzer import analyze, redact_result
 from agent_firewall.audit import append_audit_record, audit_record
+from agent_firewall.baseline import apply_baseline, load_baseline, write_baseline
 from agent_firewall.inputs import InputParseError, parse_analysis_input, parse_jsonl_input
 from agent_firewall.models import AnalysisResult, Finding
 from agent_firewall.policy import load_policy, maybe_load_policy
@@ -49,13 +50,15 @@ def run(argv: list[str] | None = None) -> int:
         print(f"agent-firewall: invalid input: {exc}", file=sys.stderr)
         return 1
 
-    loaded = load_policy_and_rules(args)
+    loaded = load_scan_config(args)
     if isinstance(loaded, int):
         return loaded
-    policy, custom_rules = loaded
+    policy, custom_rules, baseline_ids = loaded
 
     result = scan_payload(payload, policy=policy, custom_rules=custom_rules)
     try:
+        maybe_write_baseline(args, result)
+        result = apply_baseline(result, baseline_ids, policy=policy)
         maybe_write_audit(args, result, mode="scan", input_text=raw, source_path=args.input)
         emit_output(render_result(result, args), args.output)
     except OSError as exc:
@@ -72,21 +75,24 @@ def run_watch(args: argparse.Namespace) -> int:
     if args.redact:
         print("agent-firewall: --watch cannot be combined with --redact", file=sys.stderr)
         return 1
+    if args.update_baseline:
+        print("agent-firewall: --watch cannot be combined with --update-baseline", file=sys.stderr)
+        return 1
 
-    loaded = load_policy_and_rules(args)
+    loaded = load_scan_config(args)
     if isinstance(loaded, int):
         return loaded
-    policy, custom_rules = loaded
+    policy, custom_rules, baseline_ids = loaded
 
     path = Path(args.input)
     try:
-        return watch_jsonl_file(path, args=args, policy=policy, custom_rules=custom_rules)
+        return watch_jsonl_file(path, args=args, policy=policy, custom_rules=custom_rules, baseline_ids=baseline_ids)
     except OSError as exc:
         print(f"agent-firewall: watch failed: {exc}", file=sys.stderr)
         return 1
 
 
-def load_policy_and_rules(args: argparse.Namespace) -> tuple[object, object] | int:
+def load_scan_config(args: argparse.Namespace) -> tuple[object, object, set[str]] | int:
     try:
         policy = load_policy(args.policy) if args.policy else maybe_load_policy()
         custom_rules = load_rulepacks(args.rules)
@@ -96,7 +102,16 @@ def load_policy_and_rules(args: argparse.Namespace) -> tuple[object, object] | i
     except (TypeError, ValueError) as exc:
         print(f"agent-firewall: invalid policy or rules: {exc}", file=sys.stderr)
         return 1
-    return policy, custom_rules
+
+    try:
+        baseline_ids = load_baseline(args.baseline) if args.baseline else set()
+    except OSError as exc:
+        print(f"agent-firewall: could not read baseline: {exc}", file=sys.stderr)
+        return 1
+    except (TypeError, ValueError, json.JSONDecodeError) as exc:
+        print(f"agent-firewall: invalid baseline: {exc}", file=sys.stderr)
+        return 1
+    return policy, custom_rules, baseline_ids
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -112,6 +127,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--compact", action="store_true", help="Emit compact JSON or SARIF for machine output.")
     parser.add_argument("--output", default=None, help="Write the report to a file instead of stdout.")
     parser.add_argument("--audit-log", default=None, help="Append redacted audit records to a JSONL file.")
+    parser.add_argument("--baseline", default=None, help="Suppress finding IDs listed in an AgentFirewall baseline file.")
+    parser.add_argument("--update-baseline", default=None, help="Write a baseline file from the current unfiltered scan result.")
     parser.add_argument("--watch", action="store_true", help="Follow a JSONL file and scan records as they are appended.")
     parser.add_argument("--watch-from-end", action="store_true", help="Start watching from the current end of the file.")
     parser.add_argument(
@@ -215,7 +232,21 @@ def maybe_write_audit(
     )
 
 
-def watch_jsonl_file(path: Path, *, args: argparse.Namespace, policy: object, custom_rules: object) -> int:
+def maybe_write_baseline(args: argparse.Namespace, result: AnalysisResult) -> None:
+    if not args.update_baseline:
+        return
+    write_baseline(args.update_baseline, result)
+    print(f"agent-firewall: wrote baseline to {args.update_baseline}", file=sys.stderr)
+
+
+def watch_jsonl_file(
+    path: Path,
+    *,
+    args: argparse.Namespace,
+    policy: object,
+    custom_rules: object,
+    baseline_ids: set[str],
+) -> int:
     position = path.stat().st_size if args.watch_from_end else 0
     buffer = ""
     line_number = 0 if not args.watch_from_end else count_existing_lines(path)
@@ -233,6 +264,7 @@ def watch_jsonl_file(path: Path, *, args: argparse.Namespace, policy: object, cu
                 args=args,
                 policy=policy,
                 custom_rules=custom_rules,
+                baseline_ids=baseline_ids,
                 start_line=line_number,
             )
             line_number += code.processed_lines
@@ -245,6 +277,7 @@ def watch_jsonl_file(path: Path, *, args: argparse.Namespace, policy: object, cu
                     args=args,
                     policy=policy,
                     custom_rules=custom_rules,
+                    baseline_ids=baseline_ids,
                     start_line=line_number,
                 )
                 line_number += code.processed_lines
@@ -277,6 +310,7 @@ def process_watch_chunk(
     args: argparse.Namespace,
     policy: object,
     custom_rules: object,
+    baseline_ids: set[str],
     start_line: int,
 ) -> tuple[str, WatchChunkResult]:
     complete, pending = split_complete_lines(text)
@@ -287,11 +321,12 @@ def process_watch_chunk(
             continue
         line_number = start_line + offset
         try:
-            payload = parse_jsonl_input(line)
+            payload = parse_jsonl_input(line, start_line=line_number)
         except InputParseError as exc:
             print(f"agent-firewall: invalid JSONL watch input at line {line_number}: {exc}", file=sys.stderr)
             return pending, WatchChunkResult(processed_lines=processed + 1, exit_code=1)
         result = scan_payload(payload, policy=policy, custom_rules=custom_rules)
+        result = apply_baseline(result, baseline_ids, policy=policy)
         try:
             maybe_write_audit(args, result, mode="watch", input_text=line, source_path=args.input, line_number=line_number)
         except OSError as exc:

@@ -111,6 +111,17 @@ agent-firewall-audit verify .agent-firewall/audit.jsonl
 agent-firewall-audit verify .agent-firewall/audit.jsonl --format json
 ```
 
+## Baseline
+
+Use a baseline when adopting AgentFirewall in a project that already has known findings:
+
+```bash
+agent-firewall-scan agent-events.json --update-baseline agent-firewall.baseline.json
+agent-firewall-scan agent-events.json --baseline agent-firewall.baseline.json --fail-on block
+```
+
+The baseline stores stable finding IDs. Findings already in the baseline are suppressed from the rendered result and exit-code decision, so CI can fail only on new findings. Commit the baseline file if you want the same suppression in CI.
+
 ## CI Exit Codes
 
 By default, scans exit with `0` so local exploration does not break scripts unexpectedly.

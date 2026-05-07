@@ -26,6 +26,14 @@ inputs:
     description: Optional file path to write the scan report.
     required: false
     default: ""
+  baseline:
+    description: Optional AgentFirewall baseline file whose finding IDs should be suppressed.
+    required: false
+    default: ""
+  update-baseline:
+    description: Optional path to write a baseline from the current unfiltered scan.
+    required: false
+    default: ""
   policy:
     description: Optional path to agent-firewall.policy.json.
     required: false
@@ -59,6 +67,14 @@ runs:
 
         if [ -n "${{ inputs.output }}" ]; then
           args+=("--output" "${{ inputs.output }}")
+        fi
+
+        if [ -n "${{ inputs.baseline }}" ]; then
+          args+=("--baseline" "${{ inputs.baseline }}")
+        fi
+
+        if [ -n "${{ inputs.update-baseline }}" ]; then
+          args+=("--update-baseline" "${{ inputs.update-baseline }}")
         fi
 
         if [ -n "${{ inputs.policy }}" ]; then

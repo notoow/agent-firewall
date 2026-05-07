@@ -36,6 +36,10 @@ CLI and watch mode can append redacted JSONL audit records with `--audit-log`. E
 
 Audit records are hash-chained with `sha256-canonical-json-v1`: each record stores the previous record hash and its own canonical record hash. `agent-firewall-audit verify` checks the chain so edits, deletion, or reordering are detectable.
 
+## Baselines
+
+Baselines store stable finding IDs for already-reviewed issues. The scanner applies the baseline after policy/rule evaluation and before rendering, auditing, and exit-code decisions, so existing known findings do not hide newly introduced findings.
+
 ## Why API And MCP
 
 REST API is best for service integration:

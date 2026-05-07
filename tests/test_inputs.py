@@ -30,6 +30,13 @@ def test_parse_analysis_input_accepts_jsonl_events_and_messages() -> None:
     assert payload["events"][1]["metadata"]["jsonl_line"] == 3
 
 
+def test_parse_analysis_input_accepts_single_event_record() -> None:
+    payload = parse_analysis_input(json.dumps({"kind": "shell", "command": "python -m pytest"}))
+
+    assert payload["context"]["input_format"] == "jsonl"
+    assert payload["events"][0]["command"] == "python -m pytest"
+
+
 def test_parse_analysis_input_merges_jsonl_payload_records() -> None:
     raw = "\n".join(
         [

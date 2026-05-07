@@ -12,6 +12,8 @@ def test_action_metadata_is_valid_shape() -> None:
     assert action["inputs"]["fail-on"]["default"] == "block"
     assert "sarif" in action["inputs"]["format"]["description"]
     assert action["inputs"]["output"]["default"] == ""
+    assert action["inputs"]["baseline"]["default"] == ""
+    assert action["inputs"]["update-baseline"]["default"] == ""
     assert action["inputs"]["python-command"]["default"] == "python"
 
 
@@ -20,6 +22,8 @@ def test_action_installs_from_action_path_and_runs_scan() -> None:
 
     assert 'pip install "$GITHUB_ACTION_PATH"' in action_text
     assert 'args+=("--output" "${{ inputs.output }}")' in action_text
+    assert 'args+=("--baseline" "${{ inputs.baseline }}")' in action_text
+    assert 'args+=("--update-baseline" "${{ inputs.update-baseline }}")' in action_text
     assert 'agent-firewall-scan "${args[@]}"' in action_text
 
 

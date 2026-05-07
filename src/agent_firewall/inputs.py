@@ -20,15 +20,17 @@ def parse_analysis_input(raw: str) -> dict[str, Any]:
 
     if not isinstance(payload, dict):
         raise InputParseError("top-level JSON input must be an object")
+    if is_single_record(payload):
+        return parse_jsonl_input(raw)
     return payload
 
 
-def parse_jsonl_input(raw: str, *, json_error: JSONDecodeError | None = None) -> dict[str, Any]:
+def parse_jsonl_input(raw: str, *, json_error: JSONDecodeError | None = None, start_line: int = 1) -> dict[str, Any]:
     payload: dict[str, Any] = {"messages": [], "events": [], "context": {"input_format": "jsonl"}}
     texts: list[str] = []
     records = 0
 
-    for line_number, line in enumerate(raw.splitlines(), start=1):
+    for line_number, line in enumerate(raw.splitlines(), start=start_line):
         stripped = line.strip()
         if not stripped:
             continue
@@ -145,3 +147,9 @@ def is_payload_fragment(record: dict[str, Any]) -> bool:
     return "messages" in record or "events" in record or (
         "context" in record and "role" not in record and not is_event_record(record)
     )
+
+
+def is_single_record(record: dict[str, Any]) -> bool:
+    if any(key in record for key in ("messages", "events", "context")):
+        return False
+    return "role" in record or is_event_record(record)

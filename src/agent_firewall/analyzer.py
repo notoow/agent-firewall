@@ -286,7 +286,11 @@ def iter_text_sources(payload: AnalysisInput) -> Iterable[tuple[str, str]]:
     if payload.text:
         yield "text", payload.text
     for index, message in enumerate(payload.messages):
-        yield f"messages[{index}].{message.role}", message.content
+        line_number = message.metadata.get("jsonl_line")
+        if isinstance(line_number, int):
+            yield f"jsonl[{line_number}].message.{message.role}", message.content
+        else:
+            yield f"messages[{index}].{message.role}", message.content
 
 
 def match_rules(source: str, text: str, rules: list[RuleKind]) -> list[Finding]:
@@ -445,6 +449,11 @@ def recommended_controls_for(findings: list[Finding]) -> list[str]:
 
 
 def event_source_name(index: int, event: AgentEvent) -> str:
+    line_number = event.metadata.get("jsonl_line")
+    if isinstance(line_number, int):
+        if event.tool_name:
+            return f"jsonl[{line_number}].{event.kind}.{event.tool_name}"
+        return f"jsonl[{line_number}].{event.kind}"
     if event.tool_name:
         return f"events[{index}].{event.kind}.{event.tool_name}"
     return f"events[{index}].{event.kind}"

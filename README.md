@@ -133,6 +133,13 @@ With a project policy:
 agent-firewall-scan agent-events.json --policy agent-firewall.policy.json
 ```
 
+With a baseline for known findings:
+
+```bash
+agent-firewall-scan agent-events.json --update-baseline agent-firewall.baseline.json
+agent-firewall-scan agent-events.json --baseline agent-firewall.baseline.json --fail-on block
+```
+
 With custom team rules:
 
 ```bash
