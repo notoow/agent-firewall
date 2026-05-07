@@ -120,3 +120,5 @@ agent-firewall-scan suspicious-output.txt --redact
 ```
 
 This masks likely API keys, tokens, JWTs, cloud credentials, URI credentials, and secret assignments before the text is stored or passed to another model.
+
+Scan reports are also redacted by default. AgentFirewall redacts evidence excerpts and evidence sources before writing human-readable text, JSON, or SARIF output so CI logs and uploaded reports do not become another secret sink.

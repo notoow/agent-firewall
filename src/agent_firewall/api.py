@@ -6,7 +6,7 @@ import uvicorn
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
 
-from agent_firewall.analyzer import analyze
+from agent_firewall.analyzer import analyze, redact_result
 from agent_firewall.discovery import discovery_manifest
 from agent_firewall.policy import maybe_load_policy
 from agent_firewall.redaction import redact_text
@@ -52,7 +52,7 @@ def discovery() -> dict[str, Any]:
 def analyze_agent_security(request: AnalyzeRequest) -> dict[str, Any]:
     payload = request.model_dump(exclude={"policy", "rules"})
     policy = request.policy or maybe_load_policy()
-    return analyze(payload, policy=policy, custom_rules=request.rules).to_dict()
+    return redact_result(analyze(payload, policy=policy, custom_rules=request.rules)).to_dict()
 
 
 @app.post("/v1/redact")

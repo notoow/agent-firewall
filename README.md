@@ -27,6 +27,8 @@ AgentFirewall gives agent hosts a small, explainable policy layer:
 - `warn`: show risk and ask for confirmation
 - `block`: stop, redact, rotate, or rewrite the action
 
+Reports are redacted by default so evidence snippets, source names, JSON output, SARIF reports, API responses, and MCP tool results do not become a second place where secrets leak.
+
 ## Quick Start
 
 ```bash

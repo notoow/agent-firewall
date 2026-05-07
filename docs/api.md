@@ -30,6 +30,8 @@ Response:
 }
 ```
 
+Responses are redacted by default. Evidence excerpts and source fields are sanitized before they leave the API so dashboards and logs do not become another place where secrets leak.
+
 Verdicts:
 
 - `pass`: No obvious issue found.

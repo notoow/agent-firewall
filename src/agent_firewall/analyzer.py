@@ -378,7 +378,7 @@ def make_finding(
         severity=severity,
         category=category,
         confidence=confidence,
-        evidence=[Evidence(source=source, excerpt=excerpt_around(text, start, end), start=start, end=end)],
+        evidence=[Evidence(source=redact_text(source), excerpt=excerpt_around(text, start, end), start=start, end=end)],
         recommendation=recommendation,
         tags=tags,
     )
@@ -454,8 +454,22 @@ def redact_result(result: AnalysisResult) -> AnalysisResult:
     findings: list[Finding] = []
     for finding in result.findings:
         evidence = [
-            replace(item, excerpt=redact_text(item.excerpt))
+            replace(item, source=redact_text(item.source), excerpt=redact_text(item.excerpt))
             for item in finding.evidence
         ]
-        findings.append(replace(finding, evidence=evidence))
-    return replace(result, findings=findings)
+        findings.append(
+            replace(
+                finding,
+                title=redact_text(finding.title),
+                category=redact_text(finding.category),
+                evidence=evidence,
+                recommendation=redact_text(finding.recommendation),
+                tags=[redact_text(tag) for tag in finding.tags],
+            )
+        )
+    return replace(
+        result,
+        findings=findings,
+        summary=redact_text(result.summary),
+        recommended_controls=[redact_text(control) for control in result.recommended_controls],
+    )

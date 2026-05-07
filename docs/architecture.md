@@ -26,6 +26,10 @@ flowchart LR
   G --> B
 ```
 
+## Output Safety
+
+AgentFirewall treats findings as sensitive data. Reports redact likely secrets in evidence excerpts and source names before returning CLI text, JSON, SARIF, REST API responses, or MCP tool results.
+
 ## Why API And MCP
 
 REST API is best for service integration:

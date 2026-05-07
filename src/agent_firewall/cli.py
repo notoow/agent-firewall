@@ -6,7 +6,7 @@ import sys
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
-from agent_firewall.analyzer import analyze
+from agent_firewall.analyzer import analyze, redact_result
 from agent_firewall.inputs import InputParseError, parse_analysis_input
 from agent_firewall.models import AnalysisResult, Finding
 from agent_firewall.policy import load_policy, maybe_load_policy
@@ -53,7 +53,7 @@ def run(argv: list[str] | None = None) -> int:
         print(f"agent-firewall: invalid policy or rules: {exc}", file=sys.stderr)
         return 1
 
-    result = analyze(payload, policy=policy, custom_rules=custom_rules)
+    result = redact_result(analyze(payload, policy=policy, custom_rules=custom_rules))
     try:
         emit_output(render_result(result, args), args.output)
     except OSError as exc:

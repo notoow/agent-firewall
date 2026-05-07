@@ -5,7 +5,7 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
-from agent_firewall.analyzer import analyze
+from agent_firewall.analyzer import analyze, redact_result
 from agent_firewall.redaction import redact_text
 
 mcp = FastMCP(
@@ -28,7 +28,7 @@ def analyze_agent_security(payload: dict[str, Any]) -> dict[str, Any]:
       "events": [{"kind": "shell", "command": "...", "file_path": "..."}]
     }
     """
-    return analyze(payload, policy=payload.get("policy"), custom_rules=payload.get("rules")).to_dict()
+    return redact_result(analyze(payload, policy=payload.get("policy"), custom_rules=payload.get("rules"))).to_dict()
 
 
 @mcp.tool()
