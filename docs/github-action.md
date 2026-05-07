@@ -57,7 +57,7 @@ jobs:
 
 ## Inputs
 
-- `input`: path to an AgentFirewall JSON event payload. Required.
+- `input`: path to an AgentFirewall JSON or JSONL event payload. Required.
 - `fail-on`: `never`, `warn`, or `block`. Defaults to `block`.
 - `format`: `text`, `json`, or `sarif`. Defaults to `text`.
 - `compact`: compact JSON or SARIF output. Defaults to `false`.

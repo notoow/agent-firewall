@@ -14,3 +14,4 @@ This project follows semantic versioning before `1.0.0` with the usual alpha cav
 - Custom JSON rule-pack support.
 - `agent-firewall demo` and `agent-firewall doctor` onboarding commands.
 - SARIF and `--output` report support for CI/security tooling.
+- JSONL agent log parsing for append-only event streams.

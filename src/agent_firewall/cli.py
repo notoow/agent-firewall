@@ -7,6 +7,7 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 from agent_firewall.analyzer import analyze
+from agent_firewall.inputs import InputParseError, parse_analysis_input
 from agent_firewall.models import AnalysisResult, Finding
 from agent_firewall.policy import load_policy, maybe_load_policy
 from agent_firewall.redaction import redact_text
@@ -37,9 +38,9 @@ def run(argv: list[str] | None = None) -> int:
         return 0
 
     try:
-        payload = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        print(f"agent-firewall: invalid JSON input: {exc}", file=sys.stderr)
+        payload = parse_analysis_input(raw)
+    except InputParseError as exc:
+        print(f"agent-firewall: invalid input: {exc}", file=sys.stderr)
         return 1
 
     try:
@@ -64,7 +65,7 @@ def run(argv: list[str] | None = None) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Scan AI code-agent conversation and tool-event logs.")
-    parser.add_argument("input", nargs="?", help="JSON file to scan. Reads stdin when omitted.")
+    parser.add_argument("input", nargs="?", help="JSON or JSONL file to scan. Reads stdin when omitted.")
     parser.add_argument("--redact", action="store_true", help="Redact stdin or file text instead of running analysis.")
     parser.add_argument(
         "--format",
