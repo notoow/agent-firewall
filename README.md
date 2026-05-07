@@ -65,13 +65,24 @@ agent-firewall-scan examples/risky-agent-session.json
 
 Example result:
 
-```json
-{
-  "verdict": "block",
-  "risk_score": 100,
-  "max_severity": "critical",
-  "summary": "Blocking risk detected. Highest severity is critical; review and mitigate before continuing."
-}
+```text
+AgentFirewall: BLOCK
+Risk score: 100/100
+Max severity: critical
+
+Blocking risk detected. Highest severity is critical; review and mitigate before continuing.
+```
+
+For machine-readable output:
+
+```bash
+agent-firewall-scan examples/risky-agent-session.json --format json
+```
+
+For CI:
+
+```bash
+agent-firewall-scan agent-events.json --fail-on block
 ```
 
 ## REST API
@@ -181,6 +192,7 @@ AgentFirewall does not claim that a session is safe. It answers a narrower and m
 
 - [Threat model](docs/threat-model.md)
 - [Architecture](docs/architecture.md)
+- [CLI](docs/cli.md)
 - [API reference](docs/api.md)
 - [Agent integrations](docs/agent-integrations.md)
 - [MCP client config example](examples/mcp-client-config.example.json)
