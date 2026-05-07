@@ -4,6 +4,34 @@ version = "0.1.0"
 description = "Zero-config security firewall for AI coding agents."
 readme = "README.md"
 requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+  { name = "notoow" },
+]
+keywords = [
+  "ai-agent",
+  "ai-security",
+  "mcp",
+  "prompt-injection",
+  "secret-scanning",
+  "code-agent",
+  "agentic-ai",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Framework :: FastAPI",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Information Technology",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Security",
+  "Topic :: Software Development :: Quality Assurance",
+]
 dependencies = [
   "fastapi>=0.136,<1",
   "mcp>=1.27,<2",
@@ -13,8 +41,15 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  "build>=1.3,<2",
   "pytest>=9,<10",
 ]
+
+[project.urls]
+Homepage = "https://github.com/notoow/agent-firewall"
+Repository = "https://github.com/notoow/agent-firewall"
+Issues = "https://github.com/notoow/agent-firewall/issues"
+Security = "https://github.com/notoow/agent-firewall/security"
 
 [project.scripts]
 agent-firewall-api = "agent_firewall.api:main"
