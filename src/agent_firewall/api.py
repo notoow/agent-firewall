@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 
 from agent_firewall.analyzer import analyze
 from agent_firewall.discovery import discovery_manifest
+from agent_firewall.policy import maybe_load_policy
 from agent_firewall.redaction import redact_text
 
 
@@ -19,6 +20,7 @@ class AnalyzeRequest(BaseModel):
         description="Tool, shell, file, MCP, browser, email, or repository events emitted by an AI code agent.",
     )
     context: dict[str, Any] = Field(default_factory=dict)
+    policy: dict[str, Any] | None = Field(default=None, description="Optional inline AgentFirewall policy overrides.")
 
 
 class RedactRequest(BaseModel):
@@ -44,7 +46,9 @@ def discovery() -> dict[str, Any]:
 
 @app.post("/v1/analyze")
 def analyze_agent_security(request: AnalyzeRequest) -> dict[str, Any]:
-    return analyze(request.model_dump()).to_dict()
+    payload = request.model_dump(exclude={"policy"})
+    policy = request.policy or maybe_load_policy()
+    return analyze(payload, policy=policy).to_dict()
 
 
 @app.post("/v1/redact")

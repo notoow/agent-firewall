@@ -18,6 +18,7 @@ from agent_firewall.models import (
     Severity,
     Verdict,
 )
+from agent_firewall.policy import AgentFirewallPolicy, apply_policy, policy_from_dict, policy_verdict_for
 from agent_firewall.redaction import SECRET_PATTERNS, excerpt_around, redact_text
 
 
@@ -203,8 +204,9 @@ MCP_RULES: list[RuleKind] = [
 ]
 
 
-def analyze(payload: AnalysisInput | dict) -> AnalysisResult:
+def analyze(payload: AnalysisInput | dict, policy: AgentFirewallPolicy | dict | None = None) -> AnalysisResult:
     normalized = coerce_input(payload)
+    active_policy = policy_from_dict(policy) if isinstance(policy, dict) else policy
     findings: list[Finding] = []
 
     for source, text in iter_text_sources(normalized):
@@ -219,15 +221,15 @@ def analyze(payload: AnalysisInput | dict) -> AnalysisResult:
         if event.file_path:
             findings.extend(match_rules(event_source + ".file_path", event.file_path, FILE_RULES))
         if event.content:
-            event_rules = MCP_RULES if event.kind in {"tool_result", "mcp_result", "browser", "email", "issue"} else []
+            event_rules = MCP_RULES if event.kind in {"tool_result", "mcp_result", "mcp_config", "browser", "email", "issue"} else []
             findings.extend(match_rules(event_source + ".content", event.content, event_rules + PROMPT_INJECTION_RULES))
             findings.extend(find_secrets(event_source + ".content", event.content))
 
-    deduped = deduplicate_findings(findings)
+    deduped = apply_policy(deduplicate_findings(findings), active_policy)
     ordered = sorted(deduped, key=lambda item: (-SEVERITY_ORDER[item.severity], item.category, item.id))
     max_severity = ordered[0].severity if ordered else "info"
     risk_score = score_findings(ordered)
-    verdict = verdict_for(risk_score, max_severity)
+    verdict = policy_verdict_for(risk_score, max_severity, active_policy)
     return AnalysisResult(
         verdict=verdict,
         risk_score=risk_score,

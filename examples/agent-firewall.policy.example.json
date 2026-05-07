@@ -1,0 +1,22 @@
+{
+  "verdict": {
+    "warn_at": 35,
+    "block_at": 85,
+    "warn_severities": ["medium", "high"],
+    "block_severities": ["critical"]
+  },
+  "disabled_rules": [],
+  "disabled_categories": [],
+  "disabled_tags": [],
+  "severity_overrides": {
+    "mcp-server-install": "high"
+  },
+  "allow_patterns": [
+    {
+      "reason": "Allow reading documentation sample env files, but not real .env files.",
+      "rule_id": "sensitive-file-access",
+      "source_regex": "file_path$",
+      "excerpt_regex": "\\.env\\.example$"
+    }
+  ]
+}

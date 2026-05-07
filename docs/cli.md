@@ -48,6 +48,16 @@ Exit codes:
 - `2`: `warn` verdict failed a `--fail-on warn` threshold
 - `3`: `block` verdict failed a `--fail-on warn` or `--fail-on block` threshold
 
+## Policy
+
+Use `--policy` to tune a project:
+
+```bash
+agent-firewall-scan agent-events.json --policy agent-firewall.policy.json
+```
+
+When `--policy` is omitted, AgentFirewall automatically uses `./agent-firewall.policy.json` if it exists.
+
 ## Redaction
 
 ```bash

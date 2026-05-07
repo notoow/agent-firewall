@@ -85,6 +85,12 @@ For CI:
 agent-firewall-scan agent-events.json --fail-on block
 ```
 
+With a project policy:
+
+```bash
+agent-firewall-scan agent-events.json --policy agent-firewall.policy.json
+```
+
 ## REST API
 
 Run the API:
@@ -193,6 +199,7 @@ AgentFirewall does not claim that a session is safe. It answers a narrower and m
 - [Threat model](docs/threat-model.md)
 - [Architecture](docs/architecture.md)
 - [CLI](docs/cli.md)
+- [Policy](docs/policy.md)
 - [API reference](docs/api.md)
 - [Agent integrations](docs/agent-integrations.md)
 - [MCP client config example](examples/mcp-client-config.example.json)

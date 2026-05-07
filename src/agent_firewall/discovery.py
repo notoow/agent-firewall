@@ -39,6 +39,7 @@ def discovery_manifest() -> dict[str, Any]:
             "AGENTS.md",
             "CLAUDE.md",
             "GEMINI.md",
+            "agent-firewall.policy.json",
             ".mcp.json",
             ".cursor/mcp.json",
             ".cursor/rules/agent-firewall.mdc",

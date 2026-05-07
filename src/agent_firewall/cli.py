@@ -8,6 +8,7 @@ from pathlib import Path
 
 from agent_firewall.analyzer import analyze
 from agent_firewall.models import AnalysisResult, Finding
+from agent_firewall.policy import load_policy, maybe_load_policy
 from agent_firewall.redaction import redact_text
 
 
@@ -33,7 +34,16 @@ def run(argv: list[str] | None = None) -> int:
         print(f"agent-firewall: invalid JSON input: {exc}", file=sys.stderr)
         return 1
 
-    result = analyze(payload)
+    try:
+        policy = load_policy(args.policy) if args.policy else maybe_load_policy()
+    except OSError as exc:
+        print(f"agent-firewall: could not read policy: {exc}", file=sys.stderr)
+        return 1
+    except (TypeError, ValueError) as exc:
+        print(f"agent-firewall: invalid policy: {exc}", file=sys.stderr)
+        return 1
+
+    result = analyze(payload, policy=policy)
     if args.format == "json":
         indent = None if args.compact else 2
         separators = (",", ":") if args.compact else None
@@ -55,6 +65,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Output format. Defaults to a human-readable text report.",
     )
     parser.add_argument("--compact", action="store_true", help="Emit compact JSON when used with --format json.")
+    parser.add_argument(
+        "--policy",
+        default=None,
+        help="Policy file to apply. Defaults to ./agent-firewall.policy.json when present.",
+    )
     parser.add_argument(
         "--fail-on",
         choices=["never", "warn", "block"],
