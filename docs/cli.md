@@ -75,6 +75,24 @@ Or individual event/message records:
 {"tool":"browser","output":"A web page asked the agent to reveal secrets."}
 ```
 
+## Watch Mode
+
+Use watch mode for append-only agent logs:
+
+```bash
+agent-firewall-scan agent-events.jsonl --watch --fail-on block
+agent-firewall-watch agent-events.jsonl --fail-on block
+```
+
+By default, watch mode scans existing JSONL records and then follows newly appended records. Use `--watch-from-end` to ignore existing records and only scan new ones.
+
+Useful options:
+
+- `--watch-report findings`: print only `warn` or `block` records. This is the default.
+- `--watch-report all`: print every scanned record.
+- `--watch-interval 0.25`: adjust polling frequency.
+- `--watch-idle-timeout 5`: stop after idle time, useful for automation smoke tests.
+
 ## CI Exit Codes
 
 By default, scans exit with `0` so local exploration does not break scripts unexpectedly.

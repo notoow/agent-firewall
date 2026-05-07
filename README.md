@@ -92,6 +92,13 @@ For CI:
 agent-firewall-scan agent-events.json --fail-on block
 ```
 
+For append-only agent logs:
+
+```bash
+agent-firewall-watch agent-events.jsonl --fail-on block
+agent-firewall-scan agent-events.jsonl --watch --fail-on block
+```
+
 As a GitHub Action:
 
 ```yaml

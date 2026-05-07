@@ -16,3 +16,4 @@ This project follows semantic versioning before `1.0.0` with the usual alpha cav
 - SARIF and `--output` report support for CI/security tooling.
 - JSONL agent log parsing for append-only event streams.
 - Default report redaction across CLI, SARIF, REST API, and MCP outputs.
+- JSONL watch mode with an `agent-firewall-watch` command for continuous log scanning.

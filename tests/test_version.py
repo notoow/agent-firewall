@@ -1,3 +1,4 @@
+import tomllib
 from pathlib import Path
 
 from scripts.check_version import normalize_tag, read_project_version, run
@@ -22,3 +23,9 @@ def test_check_version_accepts_matching_tag() -> None:
 
 def test_check_version_rejects_mismatched_tag() -> None:
     assert run(["--tag", "v9.9.9"]) == 1
+
+
+def test_watch_console_script_is_registered() -> None:
+    config = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
+
+    assert config["project"]["scripts"]["agent-firewall-watch"] == "agent_firewall.watch:main"

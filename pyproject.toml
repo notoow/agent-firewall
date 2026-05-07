@@ -59,6 +59,7 @@ agent-firewall-doctor = "agent_firewall.onboarding:doctor_main"
 agent-firewall-init = "agent_firewall.integrations:main"
 agent-firewall-mcp = "agent_firewall.mcp_server:main"
 agent-firewall-scan = "agent_firewall.cli:main"
+agent-firewall-watch = "agent_firewall.watch:main"
 
 [build-system]
 requires = ["hatchling"]

@@ -29,6 +29,7 @@ COMMANDS = [
     "agent-firewall-init",
     "agent-firewall-mcp",
     "agent-firewall-scan",
+    "agent-firewall-watch",
 ]
 
 

@@ -1,7 +1,15 @@
 import json
 
 from agent_firewall.integrations import install_agent_configs
-from agent_firewall.onboarding import doctor_checks, format_doctor_report, resolve_command, run, risky_demo_payload, safe_demo_payload
+from agent_firewall.onboarding import (
+    COMMANDS,
+    doctor_checks,
+    format_doctor_report,
+    resolve_command,
+    run,
+    risky_demo_payload,
+    safe_demo_payload,
+)
 
 
 def test_demo_payloads_have_expected_verdicts() -> None:
@@ -72,3 +80,7 @@ def test_resolve_command_falls_back_to_python_script_dir(monkeypatch, tmp_path) 
     monkeypatch.setattr("shutil.which", lambda _: None)
 
     assert resolve_command("agent-firewall-scan") == command
+
+
+def test_doctor_checks_watch_command() -> None:
+    assert "agent-firewall-watch" in COMMANDS

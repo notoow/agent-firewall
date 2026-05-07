@@ -3,11 +3,13 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
+from dataclasses import dataclass
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 from agent_firewall.analyzer import analyze, redact_result
-from agent_firewall.inputs import InputParseError, parse_analysis_input
+from agent_firewall.inputs import InputParseError, parse_analysis_input, parse_jsonl_input
 from agent_firewall.models import AnalysisResult, Finding
 from agent_firewall.policy import load_policy, maybe_load_policy
 from agent_firewall.redaction import redact_text
@@ -22,6 +24,9 @@ def main() -> None:
 def run(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+
+    if args.watch:
+        return run_watch(args)
 
     try:
         raw = read_input(args.input)
@@ -43,6 +48,43 @@ def run(argv: list[str] | None = None) -> int:
         print(f"agent-firewall: invalid input: {exc}", file=sys.stderr)
         return 1
 
+    loaded = load_policy_and_rules(args)
+    if isinstance(loaded, int):
+        return loaded
+    policy, custom_rules = loaded
+
+    result = scan_payload(payload, policy=policy, custom_rules=custom_rules)
+    try:
+        emit_output(render_result(result, args), args.output)
+    except OSError as exc:
+        print(f"agent-firewall: could not write output: {exc}", file=sys.stderr)
+        return 1
+
+    return exit_code_for(result, fail_on=args.fail_on)
+
+
+def run_watch(args: argparse.Namespace) -> int:
+    if args.input is None:
+        print("agent-firewall: --watch requires a JSONL file path", file=sys.stderr)
+        return 1
+    if args.redact:
+        print("agent-firewall: --watch cannot be combined with --redact", file=sys.stderr)
+        return 1
+
+    loaded = load_policy_and_rules(args)
+    if isinstance(loaded, int):
+        return loaded
+    policy, custom_rules = loaded
+
+    path = Path(args.input)
+    try:
+        return watch_jsonl_file(path, args=args, policy=policy, custom_rules=custom_rules)
+    except OSError as exc:
+        print(f"agent-firewall: watch failed: {exc}", file=sys.stderr)
+        return 1
+
+
+def load_policy_and_rules(args: argparse.Namespace) -> tuple[object, object] | int:
     try:
         policy = load_policy(args.policy) if args.policy else maybe_load_policy()
         custom_rules = load_rulepacks(args.rules)
@@ -52,15 +94,7 @@ def run(argv: list[str] | None = None) -> int:
     except (TypeError, ValueError) as exc:
         print(f"agent-firewall: invalid policy or rules: {exc}", file=sys.stderr)
         return 1
-
-    result = redact_result(analyze(payload, policy=policy, custom_rules=custom_rules))
-    try:
-        emit_output(render_result(result, args), args.output)
-    except OSError as exc:
-        print(f"agent-firewall: could not write output: {exc}", file=sys.stderr)
-        return 1
-
-    return exit_code_for(result, fail_on=args.fail_on)
+    return policy, custom_rules
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -75,6 +109,26 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--compact", action="store_true", help="Emit compact JSON or SARIF for machine output.")
     parser.add_argument("--output", default=None, help="Write the report to a file instead of stdout.")
+    parser.add_argument("--watch", action="store_true", help="Follow a JSONL file and scan records as they are appended.")
+    parser.add_argument("--watch-from-end", action="store_true", help="Start watching from the current end of the file.")
+    parser.add_argument(
+        "--watch-interval",
+        type=float,
+        default=0.5,
+        help="Seconds to sleep between watch polls. Defaults to 0.5.",
+    )
+    parser.add_argument(
+        "--watch-idle-timeout",
+        type=float,
+        default=None,
+        help="Stop watching after this many idle seconds. Mostly useful for automation tests.",
+    )
+    parser.add_argument(
+        "--watch-report",
+        choices=["findings", "all"],
+        default="findings",
+        help="In watch mode, print only warn/block scans or every scanned record.",
+    )
     parser.add_argument(
         "--policy",
         default=None,
@@ -122,14 +176,132 @@ def format_machine_report(payload: dict, *, compact: bool = False) -> str:
     return json.dumps(payload, indent=indent, ensure_ascii=False, separators=separators)
 
 
-def emit_output(text: str, output: str | None) -> None:
+def emit_output(text: str, output: str | None, *, append: bool = False) -> None:
     if output:
         output_path = Path(output)
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_text(text + "\n", encoding="utf-8")
-        print(f"agent-firewall: wrote report to {output_path}", file=sys.stderr)
+        mode = "a" if append else "w"
+        with output_path.open(mode, encoding="utf-8") as handle:
+            handle.write(text + "\n")
+        action = "appended report to" if append else "wrote report to"
+        print(f"agent-firewall: {action} {output_path}", file=sys.stderr)
         return
     print(text)
+
+
+def watch_jsonl_file(path: Path, *, args: argparse.Namespace, policy: object, custom_rules: object) -> int:
+    position = path.stat().st_size if args.watch_from_end else 0
+    buffer = ""
+    line_number = 0 if not args.watch_from_end else count_existing_lines(path)
+    idle_since = time.monotonic()
+
+    while True:
+        if path.stat().st_size < position:
+            position = 0
+            buffer = ""
+        chunk, position = read_new_chunk(path, position)
+        if chunk:
+            idle_since = time.monotonic()
+            buffer, code = process_watch_chunk(
+                buffer + chunk,
+                args=args,
+                policy=policy,
+                custom_rules=custom_rules,
+                start_line=line_number,
+            )
+            line_number += code.processed_lines
+            if code.exit_code:
+                return code.exit_code
+        elif args.watch_idle_timeout is not None and time.monotonic() - idle_since >= args.watch_idle_timeout:
+            if buffer.strip():
+                _, code = process_watch_chunk(
+                    buffer + "\n",
+                    args=args,
+                    policy=policy,
+                    custom_rules=custom_rules,
+                    start_line=line_number,
+                )
+                line_number += code.processed_lines
+                if code.exit_code:
+                    return code.exit_code
+            return 0
+
+        sleep_for = max(0.0, args.watch_interval)
+        if sleep_for:
+            time.sleep(sleep_for)
+
+
+@dataclass(frozen=True)
+class WatchChunkResult:
+    processed_lines: int = 0
+    exit_code: int = 0
+
+
+def read_new_chunk(path: Path, position: int) -> tuple[str, int]:
+    with path.open("rb") as handle:
+        handle.seek(position)
+        data = handle.read()
+        new_position = handle.tell()
+    return data.decode("utf-8-sig" if position == 0 else "utf-8"), new_position
+
+
+def process_watch_chunk(
+    text: str,
+    *,
+    args: argparse.Namespace,
+    policy: object,
+    custom_rules: object,
+    start_line: int,
+) -> tuple[str, WatchChunkResult]:
+    complete, pending = split_complete_lines(text)
+    processed = 0
+    for offset, line in enumerate(complete, start=1):
+        if not line.strip():
+            processed += 1
+            continue
+        line_number = start_line + offset
+        try:
+            payload = parse_jsonl_input(line)
+        except InputParseError as exc:
+            print(f"agent-firewall: invalid JSONL watch input at line {line_number}: {exc}", file=sys.stderr)
+            return pending, WatchChunkResult(processed_lines=processed + 1, exit_code=1)
+        result = scan_payload(payload, policy=policy, custom_rules=custom_rules)
+        if args.watch_report == "all" or result.verdict != "pass":
+            try:
+                emit_watch_result(result, args=args, line_number=line_number)
+            except OSError as exc:
+                print(f"agent-firewall: could not write watch output: {exc}", file=sys.stderr)
+                return pending, WatchChunkResult(processed_lines=processed + 1, exit_code=1)
+        processed += 1
+        exit_code = exit_code_for(result, fail_on=args.fail_on)
+        if exit_code:
+            return pending, WatchChunkResult(processed_lines=processed, exit_code=exit_code)
+    return pending, WatchChunkResult(processed_lines=processed, exit_code=0)
+
+
+def split_complete_lines(text: str) -> tuple[list[str], str]:
+    lines = text.splitlines(keepends=True)
+    if not lines:
+        return [], ""
+    if not lines[-1].endswith(("\n", "\r")):
+        return [line.rstrip("\r\n") for line in lines[:-1]], lines[-1]
+    return [line.rstrip("\r\n") for line in lines], ""
+
+
+def emit_watch_result(result: AnalysisResult, *, args: argparse.Namespace, line_number: int) -> None:
+    rendered = render_result(result, args)
+    if args.format == "text":
+        rendered = f"AgentFirewall watch: {args.input}:{line_number}\n{rendered}"
+    emit_output(rendered, args.output, append=True)
+
+
+def scan_payload(payload: dict, *, policy: object, custom_rules: object) -> AnalysisResult:
+    return redact_result(analyze(payload, policy=policy, custom_rules=custom_rules))
+
+
+def count_existing_lines(path: Path) -> int:
+    with path.open("rb") as handle:
+        return sum(1 for _ in handle)
 
 
 def format_text_report(result: AnalysisResult, *, max_findings: int = 5) -> str:
