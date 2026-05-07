@@ -88,6 +88,15 @@ For CI:
 agent-firewall-scan agent-events.json --fail-on block
 ```
 
+As a GitHub Action:
+
+```yaml
+- uses: notoow/agent-firewall@v0.1.0
+  with:
+    input: agent-events.json
+    fail-on: block
+```
+
 With a project policy:
 
 ```bash
@@ -211,6 +220,7 @@ AgentFirewall does not claim that a session is safe. It answers a narrower and m
 - [Doctor and demo](docs/doctor.md)
 - [Policy](docs/policy.md)
 - [Rule packs](docs/rule-packs.md)
+- [GitHub Action](docs/github-action.md)
 - [API reference](docs/api.md)
 - [Agent integrations](docs/agent-integrations.md)
 - [Releasing](docs/releasing.md)

@@ -57,3 +57,25 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install build
           python -m build
+
+  dogfood-action:
+    name: Dogfood GitHub Action
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Scan safe example
+        uses: ./
+        with:
+          input: examples/safe-agent-session.json
+          fail-on: block

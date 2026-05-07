@@ -1,0 +1,66 @@
+name: AgentFirewall
+description: Scan AI coding agent event logs for prompt injection, secret leaks, destructive commands, exfiltration, and MCP risk.
+author: notoow
+
+branding:
+  icon: shield
+  color: red
+
+inputs:
+  input:
+    description: Path to an AgentFirewall JSON event payload.
+    required: true
+  fail-on:
+    description: "Verdict threshold that should fail the workflow: never, warn, or block."
+    required: false
+    default: block
+  format:
+    description: "Output format: text or json."
+    required: false
+    default: text
+  compact:
+    description: Emit compact JSON when format is json.
+    required: false
+    default: "false"
+  policy:
+    description: Optional path to agent-firewall.policy.json.
+    required: false
+    default: ""
+  rules:
+    description: Optional newline-separated list of custom rule-pack JSON files.
+    required: false
+    default: ""
+  python-command:
+    description: Python command to use for installation.
+    required: false
+    default: python
+
+runs:
+  using: composite
+  steps:
+    - name: Install AgentFirewall
+      shell: bash
+      run: |
+        "${{ inputs.python-command }}" -m pip install --upgrade pip
+        "${{ inputs.python-command }}" -m pip install "$GITHUB_ACTION_PATH"
+
+    - name: Scan agent event payload
+      shell: bash
+      run: |
+        args=("${{ inputs.input }}" "--fail-on" "${{ inputs.fail-on }}" "--format" "${{ inputs.format }}")
+
+        if [ "${{ inputs.compact }}" = "true" ]; then
+          args+=("--compact")
+        fi
+
+        if [ -n "${{ inputs.policy }}" ]; then
+          args+=("--policy" "${{ inputs.policy }}")
+        fi
+
+        while IFS= read -r rule_path; do
+          if [ -n "$rule_path" ]; then
+            args+=("--rules" "$rule_path")
+          fi
+        done <<< "${{ inputs.rules }}"
+
+        agent-firewall-scan "${args[@]}"
