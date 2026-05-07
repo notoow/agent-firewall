@@ -25,6 +25,7 @@ DISCOVERY_FILES = [
 
 COMMANDS = [
     "agent-firewall",
+    "agent-firewall-audit",
     "agent-firewall-api",
     "agent-firewall-init",
     "agent-firewall-mcp",

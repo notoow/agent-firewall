@@ -29,3 +29,4 @@ def test_watch_console_script_is_registered() -> None:
     config = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))
 
     assert config["project"]["scripts"]["agent-firewall-watch"] == "agent_firewall.watch:main"
+    assert config["project"]["scripts"]["agent-firewall-audit"] == "agent_firewall.audit_cli:main"

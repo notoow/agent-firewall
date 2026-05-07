@@ -84,3 +84,4 @@ def test_resolve_command_falls_back_to_python_script_dir(monkeypatch, tmp_path) 
 
 def test_doctor_checks_watch_command() -> None:
     assert "agent-firewall-watch" in COMMANDS
+    assert "agent-firewall-audit" in COMMANDS

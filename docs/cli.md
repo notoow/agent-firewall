@@ -104,6 +104,13 @@ agent-firewall-watch agent-events.jsonl --audit-log .agent-firewall/audit.jsonl
 
 Audit records include the verdict, score, finding IDs, redacted findings, source path, source line for watch mode, and a SHA-256 fingerprint of the scanned input. They do not store raw input text.
 
+Each record is chained to the previous record hash so edits, deletion, or reordering can be detected:
+
+```bash
+agent-firewall-audit verify .agent-firewall/audit.jsonl
+agent-firewall-audit verify .agent-firewall/audit.jsonl --format json
+```
+
 ## CI Exit Codes
 
 By default, scans exit with `0` so local exploration does not break scripts unexpectedly.

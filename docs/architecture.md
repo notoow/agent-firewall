@@ -34,6 +34,8 @@ AgentFirewall treats findings as sensitive data. Reports redact likely secrets i
 
 CLI and watch mode can append redacted JSONL audit records with `--audit-log`. Each record stores a verdict summary, redacted findings, source location, and an input hash instead of raw input text.
 
+Audit records are hash-chained with `sha256-canonical-json-v1`: each record stores the previous record hash and its own canonical record hash. `agent-firewall-audit verify` checks the chain so edits, deletion, or reordering are detectable.
+
 ## Why API And MCP
 
 REST API is best for service integration:
@@ -87,7 +89,7 @@ Useful `kind` values:
 1. Deterministic rules and redaction: fast, explainable, safe default.
 2. Per-workspace policy: approved domains, allowed secret names, protected paths.
 3. Human approval gates: block destructive commands and outbound transfers until reviewed.
-4. Signed audit log: add tamper-evident chaining and signing to the redacted audit records.
+4. Signed audit log: add key-based signing or transparency publishing on top of the tamper-evident audit chain.
 5. LLM-assisted review: only for ambiguous cases, never as the only secret detector.
 6. MCP reputation layer: score MCP servers by source, scopes, package pinning, and behavior.
 

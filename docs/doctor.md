@@ -47,6 +47,7 @@ Doctor checks:
 - Python version
 - package version
 - console commands on `PATH`
+- audit and watch commands on `PATH`
 - smoke scan behavior
 - project discovery files
 - `.mcp.json`

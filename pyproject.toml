@@ -53,6 +53,7 @@ Security = "https://github.com/notoow/agent-firewall/security"
 
 [project.scripts]
 agent-firewall = "agent_firewall.onboarding:main"
+agent-firewall-audit = "agent_firewall.audit_cli:main"
 agent-firewall-api = "agent_firewall.api:main"
 agent-firewall-demo = "agent_firewall.onboarding:demo_main"
 agent-firewall-doctor = "agent_firewall.onboarding:doctor_main"

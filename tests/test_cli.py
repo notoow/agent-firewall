@@ -97,6 +97,7 @@ def test_audit_log_records_scan_result(tmp_path, capsys) -> None:
     assert json.loads(capsys.readouterr().out)["verdict"] == "pass"
     record = json.loads(audit_log.read_text(encoding="utf-8"))
     assert record["schema"] == "agent-firewall.audit.v1"
+    assert record["chain"]["record_hash"]
     assert record["mode"] == "scan"
     assert record["source"]["path"] == str(payload)
     assert record["summary"]["verdict"] == "pass"
@@ -265,6 +266,7 @@ def test_watch_mode_appends_audit_records(tmp_path, capsys) -> None:
     capsys.readouterr()
     records = [json.loads(line) for line in audit_log.read_text(encoding="utf-8").splitlines()]
     assert [record["source"]["line"] for record in records] == [1, 2]
+    assert records[1]["chain"]["previous_hash"] == records[0]["chain"]["record_hash"]
     assert records[0]["summary"]["verdict"] == "pass"
     assert records[1]["summary"]["verdict"] == "block"
 

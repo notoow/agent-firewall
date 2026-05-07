@@ -104,6 +104,7 @@ For a redacted audit trail:
 ```bash
 agent-firewall-watch agent-events.jsonl --audit-log .agent-firewall/audit.jsonl
 agent-firewall-scan agent-events.json --audit-log .agent-firewall/audit.jsonl
+agent-firewall-audit verify .agent-firewall/audit.jsonl
 ```
 
 As a GitHub Action:
