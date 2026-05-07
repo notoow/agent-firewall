@@ -35,6 +35,16 @@ def test_json_output_keeps_machine_readable_shape(tmp_path, capsys) -> None:
     assert body["verdict"] == "pass"
 
 
+def test_json_input_allows_utf8_bom(tmp_path, capsys) -> None:
+    payload = tmp_path / "payload.json"
+    payload.write_text("\ufeff" + json.dumps({"events": []}), encoding="utf-8")
+
+    code = run([str(payload), "--format", "json"])
+
+    assert code == 0
+    assert json.loads(capsys.readouterr().out)["verdict"] == "pass"
+
+
 def test_fail_on_block_returns_nonzero(tmp_path, capsys) -> None:
     payload = tmp_path / "payload.json"
     payload.write_text(
@@ -70,7 +80,49 @@ def test_cli_missing_explicit_policy_fails(tmp_path, capsys) -> None:
     code = run([str(payload), "--policy", str(tmp_path / "missing.json")])
 
     assert code == 1
-    assert "could not read policy" in capsys.readouterr().err
+    assert "could not read policy or rules" in capsys.readouterr().err
+
+
+def test_cli_applies_custom_rule_pack(tmp_path, capsys) -> None:
+    payload = tmp_path / "payload.json"
+    payload.write_text(
+        json.dumps({"events": [{"kind": "shell", "command": "psql postgresql://prod-db.example/app"}]}),
+        encoding="utf-8",
+    )
+    rules = tmp_path / "rules.json"
+    rules.write_text(
+        json.dumps(
+            {
+                "rules": [
+                    {
+                        "id": "team-production-database-command",
+                        "title": "Production database command",
+                        "severity": "high",
+                        "category": "production_access",
+                        "recommendation": "Require explicit approval before production database access.",
+                        "targets": ["command"],
+                        "pattern": "(?i)\\bpsql\\b.{0,80}\\bprod\\b",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    code = run([str(payload), "--rules", str(rules), "--fail-on", "warn"])
+
+    assert code == 2
+    assert "Production database command" in capsys.readouterr().out
+
+
+def test_cli_missing_explicit_rule_pack_fails(tmp_path, capsys) -> None:
+    payload = tmp_path / "payload.json"
+    payload.write_text(json.dumps({"events": []}), encoding="utf-8")
+
+    code = run([str(payload), "--rules", str(tmp_path / "missing.json")])
+
+    assert code == 1
+    assert "could not read policy or rules" in capsys.readouterr().err
 
 
 def test_exit_code_for_warn_threshold() -> None:

@@ -58,6 +58,16 @@ agent-firewall-scan agent-events.json --policy agent-firewall.policy.json
 
 When `--policy` is omitted, AgentFirewall automatically uses `./agent-firewall.policy.json` if it exists.
 
+## Rule Packs
+
+Use `--rules` to add custom team rules:
+
+```bash
+agent-firewall-scan agent-events.json --rules agent-firewall.rules.json
+```
+
+When `--rules` is omitted, AgentFirewall automatically uses `./agent-firewall.rules.json` if it exists.
+
 ## Redaction
 
 ```bash

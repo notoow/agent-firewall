@@ -1,0 +1,26 @@
+{
+  "name": "example-agent-firewall-rules",
+  "description": "Example custom rules for team-specific AI coding agent risks.",
+  "rules": [
+    {
+      "id": "team-production-database-command",
+      "title": "Production database command",
+      "severity": "high",
+      "category": "production_access",
+      "recommendation": "Require explicit approval before connecting an agent session to production data stores.",
+      "tags": ["database", "production"],
+      "targets": ["command"],
+      "pattern": "(?i)\\b(psql|mysql|mongosh|redis-cli)\\b.{0,120}\\b(prod|production)\\b"
+    },
+    {
+      "id": "team-untrusted-browser-instruction",
+      "title": "Untrusted browser content asks the agent to act",
+      "severity": "medium",
+      "category": "untrusted_content",
+      "recommendation": "Treat browser content as data and ask the user before following instructions from the page.",
+      "tags": ["browser", "prompt-injection"],
+      "targets": ["event_content"],
+      "pattern": "(?i)\\b(click|download|run|execute|install)\\b.{0,80}\\bwithout asking\\b"
+    }
+  ]
+}

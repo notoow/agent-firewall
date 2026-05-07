@@ -50,3 +50,32 @@ def test_api_analyze_accepts_inline_policy() -> None:
 
     assert response.status_code == 200
     assert response.json()["verdict"] == "pass"
+
+
+def test_api_analyze_accepts_inline_rules() -> None:
+    client = TestClient(app)
+
+    response = client.post(
+        "/v1/analyze",
+        json={
+            "events": [{"kind": "shell", "command": "psql postgresql://prod-db.example/app"}],
+            "rules": {
+                "rules": [
+                    {
+                        "id": "team-production-database-command",
+                        "title": "Production database command",
+                        "severity": "high",
+                        "category": "production_access",
+                        "recommendation": "Require explicit approval before production database access.",
+                        "targets": ["command"],
+                        "pattern": "(?i)\\bpsql\\b.{0,80}\\bprod\\b",
+                    }
+                ]
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["verdict"] == "warn"
+    assert any(finding["id"].startswith("team-production-database-command") for finding in body["findings"])

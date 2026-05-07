@@ -28,7 +28,7 @@ def analyze_agent_security(payload: dict[str, Any]) -> dict[str, Any]:
       "events": [{"kind": "shell", "command": "...", "file_path": "..."}]
     }
     """
-    return analyze(payload, policy=payload.get("policy")).to_dict()
+    return analyze(payload, policy=payload.get("policy"), custom_rules=payload.get("rules")).to_dict()
 
 
 @mcp.tool()

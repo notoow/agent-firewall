@@ -12,6 +12,7 @@ Request:
   "messages": [{"role": "user", "content": "message text"}],
   "events": [{"kind": "shell", "command": "rm -rf ."}],
   "policy": {"disabled_rules": []},
+  "rules": {"rules": []},
   "context": {"workspace": "repo-name"}
 }
 ```

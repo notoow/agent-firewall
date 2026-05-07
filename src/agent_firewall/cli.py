@@ -10,6 +10,7 @@ from agent_firewall.analyzer import analyze
 from agent_firewall.models import AnalysisResult, Finding
 from agent_firewall.policy import load_policy, maybe_load_policy
 from agent_firewall.redaction import redact_text
+from agent_firewall.rulepack import load_rulepacks
 
 
 def main() -> None:
@@ -36,14 +37,15 @@ def run(argv: list[str] | None = None) -> int:
 
     try:
         policy = load_policy(args.policy) if args.policy else maybe_load_policy()
+        custom_rules = load_rulepacks(args.rules)
     except OSError as exc:
-        print(f"agent-firewall: could not read policy: {exc}", file=sys.stderr)
+        print(f"agent-firewall: could not read policy or rules: {exc}", file=sys.stderr)
         return 1
     except (TypeError, ValueError) as exc:
-        print(f"agent-firewall: invalid policy: {exc}", file=sys.stderr)
+        print(f"agent-firewall: invalid policy or rules: {exc}", file=sys.stderr)
         return 1
 
-    result = analyze(payload, policy=policy)
+    result = analyze(payload, policy=policy, custom_rules=custom_rules)
     if args.format == "json":
         indent = None if args.compact else 2
         separators = (",", ":") if args.compact else None
@@ -71,6 +73,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Policy file to apply. Defaults to ./agent-firewall.policy.json when present.",
     )
     parser.add_argument(
+        "--rules",
+        action="append",
+        default=None,
+        help="Custom JSON rule pack to load. Can be passed multiple times. Defaults to ./agent-firewall.rules.json when present.",
+    )
+    parser.add_argument(
         "--fail-on",
         choices=["never", "warn", "block"],
         default="never",
@@ -88,7 +96,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 def read_input(path: str | None) -> str:
     if path:
-        return Path(path).read_text(encoding="utf-8")
+        return Path(path).read_text(encoding="utf-8-sig")
     return sys.stdin.read()
 
 

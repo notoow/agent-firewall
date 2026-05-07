@@ -21,6 +21,10 @@ class AnalyzeRequest(BaseModel):
     )
     context: dict[str, Any] = Field(default_factory=dict)
     policy: dict[str, Any] | None = Field(default=None, description="Optional inline AgentFirewall policy overrides.")
+    rules: dict[str, Any] | list[dict[str, Any]] | None = Field(
+        default=None,
+        description="Optional inline custom rule pack.",
+    )
 
 
 class RedactRequest(BaseModel):
@@ -46,9 +50,9 @@ def discovery() -> dict[str, Any]:
 
 @app.post("/v1/analyze")
 def analyze_agent_security(request: AnalyzeRequest) -> dict[str, Any]:
-    payload = request.model_dump(exclude={"policy"})
+    payload = request.model_dump(exclude={"policy", "rules"})
     policy = request.policy or maybe_load_policy()
-    return analyze(payload, policy=policy).to_dict()
+    return analyze(payload, policy=policy, custom_rules=request.rules).to_dict()
 
 
 @app.post("/v1/redact")

@@ -20,6 +20,7 @@ from agent_firewall.models import (
 )
 from agent_firewall.policy import AgentFirewallPolicy, apply_policy, policy_from_dict, policy_verdict_for
 from agent_firewall.redaction import SECRET_PATTERNS, excerpt_around, redact_text
+from agent_firewall.rulepack import RulePackRule, rules_from_any
 
 
 RuleKind = tuple[str, str, Severity, str, str, list[str], re.Pattern[str]]
@@ -204,25 +205,34 @@ MCP_RULES: list[RuleKind] = [
 ]
 
 
-def analyze(payload: AnalysisInput | dict, policy: AgentFirewallPolicy | dict | None = None) -> AnalysisResult:
+def analyze(
+    payload: AnalysisInput | dict,
+    policy: AgentFirewallPolicy | dict | None = None,
+    custom_rules: list[RulePackRule] | dict | list[dict] | None = None,
+) -> AnalysisResult:
     normalized = coerce_input(payload)
     active_policy = policy_from_dict(policy) if isinstance(policy, dict) else policy
+    active_custom_rules = rules_from_any(custom_rules)
     findings: list[Finding] = []
 
     for source, text in iter_text_sources(normalized):
         findings.extend(match_rules(source, text, PROMPT_INJECTION_RULES + MCP_RULES))
+        findings.extend(match_custom_rules(source, text, "message", active_custom_rules))
         findings.extend(find_secrets(source, text))
 
     for index, event in enumerate(normalized.events):
         event_source = event_source_name(index, event)
         if event.command:
             findings.extend(match_rules(event_source + ".command", event.command, COMMAND_RULES))
+            findings.extend(match_custom_rules(event_source + ".command", event.command, "command", active_custom_rules))
             findings.extend(find_secrets(event_source + ".command", event.command))
         if event.file_path:
             findings.extend(match_rules(event_source + ".file_path", event.file_path, FILE_RULES))
+            findings.extend(match_custom_rules(event_source + ".file_path", event.file_path, "file_path", active_custom_rules))
         if event.content:
             event_rules = MCP_RULES if event.kind in {"tool_result", "mcp_result", "mcp_config", "browser", "email", "issue"} else []
             findings.extend(match_rules(event_source + ".content", event.content, event_rules + PROMPT_INJECTION_RULES))
+            findings.extend(match_custom_rules(event_source + ".content", event.content, "event_content", active_custom_rules))
             findings.extend(find_secrets(event_source + ".content", event.content))
 
     deduped = apply_policy(deduplicate_findings(findings), active_policy)
@@ -296,6 +306,30 @@ def match_rules(source: str, text: str, rules: list[RuleKind]) -> list[Finding]:
                     end=match.end(),
                     recommendation=recommendation,
                     tags=tags,
+                )
+            )
+    return findings
+
+
+def match_custom_rules(source: str, text: str, target: str, rules: list[RulePackRule]) -> list[Finding]:
+    findings: list[Finding] = []
+    for rule in rules:
+        if target not in rule.targets:
+            continue
+        for match in rule.pattern.finditer(text):
+            findings.append(
+                make_finding(
+                    rule_id=rule.id,
+                    title=rule.title,
+                    severity=rule.severity,
+                    category=rule.category,
+                    confidence=rule.confidence,
+                    source=source,
+                    text=text,
+                    start=match.start(),
+                    end=match.end(),
+                    recommendation=rule.recommendation,
+                    tags=rule.tags,
                 )
             )
     return findings

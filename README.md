@@ -91,6 +91,12 @@ With a project policy:
 agent-firewall-scan agent-events.json --policy agent-firewall.policy.json
 ```
 
+With custom team rules:
+
+```bash
+agent-firewall-scan agent-events.json --rules agent-firewall.rules.json
+```
+
 ## REST API
 
 Run the API:
@@ -200,6 +206,7 @@ AgentFirewall does not claim that a session is safe. It answers a narrower and m
 - [Architecture](docs/architecture.md)
 - [CLI](docs/cli.md)
 - [Policy](docs/policy.md)
+- [Rule packs](docs/rule-packs.md)
 - [API reference](docs/api.md)
 - [Agent integrations](docs/agent-integrations.md)
 - [MCP client config example](examples/mcp-client-config.example.json)
