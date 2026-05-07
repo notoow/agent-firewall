@@ -54,6 +54,7 @@ Doctor checks:
 - `.cursor/mcp.json`
 - `agent-firewall.policy.json`
 - `agent-firewall.rules.json`
+- `agent-firewall.baseline.json`
 
 Warnings are allowed by default so a fresh project can still pass while telling you what to install next.
 
@@ -68,3 +69,5 @@ If discovery files are missing:
 ```bash
 agent-firewall-init --target /path/to/project
 ```
+
+`agent-firewall-init` also creates starter policy, rule-pack, and baseline files when they do not already exist.

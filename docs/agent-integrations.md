@@ -13,10 +13,14 @@ Scans also auto-load project `agent-firewall.policy.json`, `agent-firewall.rules
 - `AGENTS.md`: shared instructions for Codex, Cursor, and other AGENTS-aware tools.
 - `CLAUDE.md`: Claude Code project memory.
 - `GEMINI.md`: Gemini and Antigravity-style project guidance.
+- `agent-firewall.policy.json`: starter project policy loaded automatically.
+- `agent-firewall.rules.json`: empty project rule pack loaded automatically when custom rules are added.
+- `agent-firewall.baseline.json`: empty baseline file for already-reviewed findings.
 - `.mcp.json`: Claude Code project MCP configuration.
 - `.cursor/mcp.json`: Cursor project MCP configuration.
 - `.cursor/rules/agent-firewall.mdc`: always-applied Cursor project rule.
 - `.agents/rules/agent-firewall.md`: generic agent-rule fallback.
+- `.github/copilot-instructions.md`: GitHub Copilot project instructions.
 
 ## Install Into Another Project
 

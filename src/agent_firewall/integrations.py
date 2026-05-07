@@ -47,6 +47,43 @@ Call `analyze_agent_security` through MCP when available. Otherwise, scan a JSON
 Stop on `block`, ask for confirmation on `warn`, continue on `pass`.
 """
 
+COPILOT_INSTRUCTIONS = """\
+# AgentFirewall
+
+Use `AGENTS.md` as the source of truth for project agent instructions.
+
+Before suggesting or applying high-risk shell, file, git, package, network, or MCP actions, prefer the AgentFirewall MCP tool `analyze_agent_security` when available.
+
+Stop on `block`, ask for confirmation on `warn`, continue on `pass`.
+"""
+
+POLICY_TEMPLATE: dict[str, Any] = {
+    "verdict": {
+        "warn_at": 40,
+        "block_at": 85,
+        "warn_severities": ["medium", "high"],
+        "block_severities": ["critical"],
+    },
+    "disabled_rules": [],
+    "disabled_categories": [],
+    "disabled_tags": [],
+    "severity_overrides": {},
+    "allow_patterns": [],
+}
+
+RULEPACK_TEMPLATE: dict[str, Any] = {
+    "name": "project-agent-firewall-rules",
+    "description": "Project-specific AgentFirewall rules. Add team rules here when built-in detections are not enough.",
+    "rules": [],
+}
+
+BASELINE_TEMPLATE: dict[str, Any] = {
+    "schema": "agent-firewall.baseline.v1",
+    "created_at": None,
+    "finding_ids": [],
+    "findings": [],
+}
+
 
 @dataclass(frozen=True)
 class InstallAction:
@@ -70,8 +107,12 @@ def install_agent_configs(
 
     actions.append(write_file(target / ".cursor" / "rules" / "agent-firewall.mdc", CURSOR_RULE, dry_run=dry_run))
     actions.append(write_file(target / ".agents" / "rules" / "agent-firewall.md", AGENTS_RULE, dry_run=dry_run))
+    actions.append(upsert_markdown(target / ".github" / "copilot-instructions.md", COPILOT_INSTRUCTIONS, dry_run=dry_run))
     actions.append(merge_mcp_config(target / ".mcp.json", command=command, args=args, dry_run=dry_run))
     actions.append(merge_mcp_config(target / ".cursor" / "mcp.json", command=command, args=args, dry_run=dry_run))
+    actions.append(write_json_template(target / "agent-firewall.policy.json", POLICY_TEMPLATE, dry_run=dry_run))
+    actions.append(write_json_template(target / "agent-firewall.rules.json", RULEPACK_TEMPLATE, dry_run=dry_run))
+    actions.append(write_json_template(target / "agent-firewall.baseline.json", BASELINE_TEMPLATE, dry_run=dry_run))
 
     return actions
 
@@ -120,6 +161,15 @@ def write_file(path: Path, content: str, *, dry_run: bool) -> InstallAction:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content.rstrip() + "\n", encoding="utf-8")
     return InstallAction(str(path), action)
+
+
+def write_json_template(path: Path, content: dict[str, Any], *, dry_run: bool) -> InstallAction:
+    if path.exists():
+        return InstallAction(str(path), "unchanged")
+    if not dry_run:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(content, indent=2) + "\n", encoding="utf-8")
+    return InstallAction(str(path), "created")
 
 
 def merge_mcp_config(path: Path, *, command: str, args: list[str], dry_run: bool) -> InstallAction:

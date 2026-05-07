@@ -205,6 +205,9 @@ Installed files:
 - `AGENTS.md`
 - `CLAUDE.md`
 - `GEMINI.md`
+- `agent-firewall.policy.json`
+- `agent-firewall.rules.json`
+- `agent-firewall.baseline.json`
 - `.mcp.json`
 - `.cursor/mcp.json`
 - `.cursor/rules/agent-firewall.mdc`

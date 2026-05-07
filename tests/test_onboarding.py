@@ -66,7 +66,19 @@ def test_doctor_reports_installed_project_files(tmp_path) -> None:
     report = format_doctor_report(checks, target=tmp_path)
 
     assert "project file:AGENTS.md: found" in report
+    assert "project file:.agents/rules/agent-firewall.md: found" in report
+    assert "project file:.github/copilot-instructions.md: found" in report
     assert "project MCP config: valid JSON" in report
+    assert "baseline: agent-firewall.baseline.json is valid with 0 finding ID(s)" in report
+
+
+def test_doctor_detects_invalid_baseline(tmp_path, capsys) -> None:
+    (tmp_path / "agent-firewall.baseline.json").write_text('{"schema": "bad", "finding_ids": []}', encoding="utf-8")
+
+    code = run(["doctor", "--target", str(tmp_path)])
+
+    assert code == 1
+    assert "baseline schema" in capsys.readouterr().out
 
 
 def test_resolve_command_falls_back_to_python_script_dir(monkeypatch, tmp_path) -> None:

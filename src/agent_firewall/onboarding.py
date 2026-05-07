@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from agent_firewall.analyzer import analyze
+from agent_firewall.baseline import DEFAULT_BASELINE_FILE, load_baseline
 from agent_firewall.cli import format_text_report, package_version
 from agent_firewall.policy import DEFAULT_POLICY_FILE, load_policy
 from agent_firewall.rulepack import DEFAULT_RULEPACK_FILE, load_rulepack
@@ -21,6 +22,8 @@ DISCOVERY_FILES = [
     ".mcp.json",
     ".cursor/mcp.json",
     ".cursor/rules/agent-firewall.mdc",
+    ".agents/rules/agent-firewall.md",
+    ".github/copilot-instructions.md",
 ]
 
 COMMANDS = [
@@ -113,6 +116,7 @@ def doctor_checks(target: Path) -> list[DoctorCheck]:
     checks.extend(check_json_file(target / ".cursor" / "mcp.json", "Cursor MCP config"))
     checks.append(check_policy_file(target / DEFAULT_POLICY_FILE))
     checks.append(check_rulepack_file(target / DEFAULT_RULEPACK_FILE))
+    checks.append(check_baseline_file(target / DEFAULT_BASELINE_FILE))
     return checks
 
 
@@ -197,6 +201,16 @@ def check_rulepack_file(path: Path) -> DoctorCheck:
     return DoctorCheck("rule pack", "pass", f"{DEFAULT_RULEPACK_FILE} is valid with {len(rules)} rule(s)")
 
 
+def check_baseline_file(path: Path) -> DoctorCheck:
+    if not path.exists():
+        return DoctorCheck("baseline", "pass", f"no {DEFAULT_BASELINE_FILE}; no findings suppressed")
+    try:
+        finding_ids = load_baseline(path)
+    except (OSError, TypeError, ValueError, json.JSONDecodeError) as exc:
+        return DoctorCheck("baseline", "fail", str(exc))
+    return DoctorCheck("baseline", "pass", f"{DEFAULT_BASELINE_FILE} is valid with {len(finding_ids)} finding ID(s)")
+
+
 def format_doctor_report(checks: list[DoctorCheck], *, target: Path) -> str:
     lines = [
         "AgentFirewall Doctor",
@@ -215,7 +229,7 @@ def format_doctor_report(checks: list[DoctorCheck], *, target: Path) -> str:
         ]
     )
     if counts["warn"]:
-        lines.append("Tip: run agent-firewall-init --target <project> to install project discovery files.")
+        lines.append("Tip: run agent-firewall-init --target <project> to install project discovery files and starter scan config.")
     return "\n".join(lines)
 
 
