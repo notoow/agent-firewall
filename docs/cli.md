@@ -117,10 +117,12 @@ Use a baseline when adopting AgentFirewall in a project that already has known f
 
 ```bash
 agent-firewall-scan agent-events.json --update-baseline agent-firewall.baseline.json
-agent-firewall-scan agent-events.json --baseline agent-firewall.baseline.json --fail-on block
+agent-firewall-scan agent-events.json --fail-on block
 ```
 
 The baseline stores stable finding IDs. Findings already in the baseline are suppressed from the rendered result and exit-code decision, so CI can fail only on new findings. Commit the baseline file if you want the same suppression in CI.
+
+`agent-firewall-scan` auto-loads `./agent-firewall.baseline.json` when present. Use `--baseline path/to/file.json` to select another baseline, or `--no-baseline` to ignore the default file for one run.
 
 ## CI Exit Codes
 

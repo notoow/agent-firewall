@@ -10,7 +10,7 @@ from pathlib import Path
 
 from agent_firewall.analyzer import analyze, redact_result
 from agent_firewall.audit import append_audit_record, audit_record
-from agent_firewall.baseline import apply_baseline, load_baseline, write_baseline
+from agent_firewall.baseline import apply_baseline, load_baseline, maybe_load_baseline, write_baseline
 from agent_firewall.inputs import InputParseError, parse_analysis_input, parse_jsonl_input
 from agent_firewall.models import AnalysisResult, Finding
 from agent_firewall.policy import load_policy, maybe_load_policy
@@ -103,8 +103,12 @@ def load_scan_config(args: argparse.Namespace) -> tuple[object, object, set[str]
         print(f"agent-firewall: invalid policy or rules: {exc}", file=sys.stderr)
         return 1
 
+    if args.baseline and args.no_baseline:
+        print("agent-firewall: --baseline cannot be combined with --no-baseline", file=sys.stderr)
+        return 1
+
     try:
-        baseline_ids = load_baseline(args.baseline) if args.baseline else set()
+        baseline_ids = load_baseline(args.baseline) if args.baseline else maybe_load_default_baseline(args)
     except OSError as exc:
         print(f"agent-firewall: could not read baseline: {exc}", file=sys.stderr)
         return 1
@@ -112,6 +116,12 @@ def load_scan_config(args: argparse.Namespace) -> tuple[object, object, set[str]
         print(f"agent-firewall: invalid baseline: {exc}", file=sys.stderr)
         return 1
     return policy, custom_rules, baseline_ids
+
+
+def maybe_load_default_baseline(args: argparse.Namespace) -> set[str]:
+    if args.no_baseline or args.update_baseline:
+        return set()
+    return maybe_load_baseline()
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -127,7 +137,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--compact", action="store_true", help="Emit compact JSON or SARIF for machine output.")
     parser.add_argument("--output", default=None, help="Write the report to a file instead of stdout.")
     parser.add_argument("--audit-log", default=None, help="Append redacted audit records to a JSONL file.")
-    parser.add_argument("--baseline", default=None, help="Suppress finding IDs listed in an AgentFirewall baseline file.")
+    parser.add_argument(
+        "--baseline",
+        default=None,
+        help="Suppress finding IDs listed in a baseline file. Defaults to ./agent-firewall.baseline.json when present.",
+    )
+    parser.add_argument("--no-baseline", action="store_true", help="Do not auto-load ./agent-firewall.baseline.json.")
     parser.add_argument("--update-baseline", default=None, help="Write a baseline file from the current unfiltered scan result.")
     parser.add_argument("--watch", action="store_true", help="Follow a JSONL file and scan records as they are appended.")
     parser.add_argument("--watch-from-end", action="store_true", help="Start watching from the current end of the file.")

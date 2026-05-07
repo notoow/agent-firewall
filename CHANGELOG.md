@@ -21,3 +21,4 @@ This project follows semantic versioning before `1.0.0` with the usual alpha cav
 - Tamper-evident audit hash chains with `agent-firewall-audit verify`.
 - Baseline files for suppressing known findings and failing CI only on new findings.
 - Inline baseline support for REST API and MCP scans.
+- Automatic project baseline and rule-pack loading across CLI, REST API, and MCP scans.

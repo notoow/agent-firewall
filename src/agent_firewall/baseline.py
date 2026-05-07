@@ -11,6 +11,7 @@ from agent_firewall.models import AnalysisResult, Finding
 from agent_firewall.policy import AgentFirewallPolicy, policy_verdict_for
 
 BASELINE_SCHEMA = "agent-firewall.baseline.v1"
+DEFAULT_BASELINE_FILE = "agent-firewall.baseline.json"
 
 
 def baseline_from_result(result: AnalysisResult) -> dict[str, Any]:
@@ -45,6 +46,13 @@ def write_baseline(path: str | Path, result: AnalysisResult) -> None:
 def load_baseline(path: str | Path) -> set[str]:
     data = json.loads(Path(path).read_text(encoding="utf-8-sig"))
     return baseline_ids_from_data(data, require_schema=True)
+
+
+def maybe_load_baseline(path: str | Path | None = None) -> set[str]:
+    baseline_path = Path(path or DEFAULT_BASELINE_FILE)
+    if not baseline_path.exists():
+        return set()
+    return load_baseline(baseline_path)
 
 
 def baseline_ids_from_data(data: Any, *, require_schema: bool = False) -> set[str]:

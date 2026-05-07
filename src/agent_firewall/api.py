@@ -7,10 +7,11 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from agent_firewall.analyzer import analyze, redact_result
-from agent_firewall.baseline import apply_baseline, baseline_ids_from_data
+from agent_firewall.baseline import apply_baseline, baseline_ids_from_data, maybe_load_baseline
 from agent_firewall.discovery import discovery_manifest
 from agent_firewall.policy import maybe_load_policy, policy_from_dict
 from agent_firewall.redaction import redact_text
+from agent_firewall.rulepack import maybe_load_rulepack, rules_from_any
 
 
 class AnalyzeRequest(BaseModel):
@@ -56,12 +57,28 @@ def discovery() -> dict[str, Any]:
 @app.post("/v1/analyze")
 def analyze_agent_security(request: AnalyzeRequest) -> dict[str, Any]:
     payload = request.model_dump(exclude={"policy", "rules", "baseline"})
-    policy = policy_from_dict(request.policy) if request.policy is not None else maybe_load_policy()
     try:
-        baseline_ids = baseline_ids_from_data(request.baseline)
+        policy = policy_from_dict(request.policy) if request.policy is not None else maybe_load_policy()
+    except OSError as exc:
+        raise HTTPException(status_code=422, detail=f"could not read policy: {exc}") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=f"invalid policy: {exc}") from exc
+
+    try:
+        custom_rules = rules_from_any(request.rules) if request.rules is not None else maybe_load_rulepack()
+    except OSError as exc:
+        raise HTTPException(status_code=422, detail=f"could not read rules: {exc}") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=f"invalid rules: {exc}") from exc
+
+    try:
+        baseline_ids = baseline_ids_from_data(request.baseline) if request.baseline is not None else maybe_load_baseline()
+    except OSError as exc:
+        raise HTTPException(status_code=422, detail=f"could not read baseline: {exc}") from exc
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=f"invalid baseline: {exc}") from exc
-    result = redact_result(analyze(payload, policy=policy, custom_rules=request.rules))
+
+    result = redact_result(analyze(payload, policy=policy, custom_rules=custom_rules))
     return apply_baseline(result, baseline_ids, policy=policy).to_dict()
 
 

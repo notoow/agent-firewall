@@ -6,6 +6,8 @@ AgentFirewall supports three layers of auto-discovery:
 2. Tool-specific instruction files such as `CLAUDE.md`, `GEMINI.md`, Cursor rules, and Copilot instructions.
 3. Project-scoped MCP configuration where the client supports it.
 
+Scans also auto-load project `agent-firewall.policy.json`, `agent-firewall.rules.json`, and `agent-firewall.baseline.json` files when they exist in the agent working directory.
+
 ## Files Installed By `agent-firewall-init`
 
 - `AGENTS.md`: shared instructions for Codex, Cursor, and other AGENTS-aware tools.

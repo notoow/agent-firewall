@@ -38,7 +38,7 @@ Audit records are hash-chained with `sha256-canonical-json-v1`: each record stor
 
 ## Baselines
 
-Baselines store stable finding IDs for already-reviewed issues. The scanner, REST API, and MCP tool apply the baseline after policy/rule evaluation and before rendering, auditing, verdict responses, and exit-code decisions, so existing known findings do not hide newly introduced findings.
+Baselines store stable finding IDs for already-reviewed issues. The scanner, REST API, and MCP tool auto-load `agent-firewall.baseline.json` when present, then apply it after policy/rule evaluation and before rendering, auditing, verdict responses, and exit-code decisions, so existing known findings do not hide newly introduced findings.
 
 ## Why API And MCP
 

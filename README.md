@@ -137,8 +137,10 @@ With a baseline for known findings:
 
 ```bash
 agent-firewall-scan agent-events.json --update-baseline agent-firewall.baseline.json
-agent-firewall-scan agent-events.json --baseline agent-firewall.baseline.json --fail-on block
+agent-firewall-scan agent-events.json --fail-on block
 ```
+
+When `agent-firewall.policy.json`, `agent-firewall.rules.json`, or `agent-firewall.baseline.json` exists in the project root, CLI, REST API, and MCP scans load it automatically.
 
 With custom team rules:
 
@@ -182,7 +184,7 @@ Available MCP tools:
 - `redact_sensitive_text`
 - `recommended_agent_security_controls`
 
-`analyze_agent_security` also accepts an inline `baseline` object or finding ID list, matching the CLI baseline format.
+`analyze_agent_security` auto-loads project policy, rule, and baseline files from the current working directory. It also accepts an inline `baseline` object or finding ID list when a host wants to override the default project baseline.
 
 Remote-style experiment:
 

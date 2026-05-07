@@ -9,6 +9,7 @@ from agent_firewall.baseline import (
     baseline_from_result,
     baseline_ids_from_data,
     load_baseline,
+    maybe_load_baseline,
     write_baseline,
 )
 
@@ -32,6 +33,13 @@ def test_write_and_load_baseline(tmp_path) -> None:
     write_baseline(path, risky_result())
 
     assert next(iter(load_baseline(path))).startswith("remote-code-exec-command")
+
+
+def test_maybe_load_baseline_uses_default_file(tmp_path, monkeypatch) -> None:
+    monkeypatch.chdir(tmp_path)
+    write_baseline(tmp_path / "agent-firewall.baseline.json", risky_result())
+
+    assert next(iter(maybe_load_baseline())).startswith("remote-code-exec-command")
 
 
 def test_baseline_ids_from_data_accepts_inline_finding_ids() -> None:

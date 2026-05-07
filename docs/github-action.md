@@ -62,8 +62,9 @@ jobs:
   with:
     input: agent-events.json
     fail-on: block
-    baseline: agent-firewall.baseline.json
 ```
+
+The action auto-loads `agent-firewall.baseline.json` from the checked-out repository when it exists. Pass `baseline` only when the file lives somewhere else.
 
 ## Inputs
 
@@ -72,7 +73,7 @@ jobs:
 - `format`: `text`, `json`, or `sarif`. Defaults to `text`.
 - `compact`: compact JSON or SARIF output. Defaults to `false`.
 - `output`: optional file path to write the scan report.
-- `baseline`: optional AgentFirewall baseline file whose finding IDs should be suppressed.
+- `baseline`: optional AgentFirewall baseline override. Defaults to `agent-firewall.baseline.json` when present.
 - `update-baseline`: optional path to write a baseline from the current unfiltered scan.
 - `policy`: optional path to `agent-firewall.policy.json`.
 - `rules`: optional newline-separated list of custom rule-pack JSON files.

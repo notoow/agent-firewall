@@ -33,6 +33,8 @@ Response:
 
 Responses are redacted by default. Evidence excerpts and source fields are sanitized before they leave the API so dashboards and logs do not become another place where secrets leak.
 
+When `policy`, `rules`, or `baseline` is omitted, the API auto-loads `./agent-firewall.policy.json`, `./agent-firewall.rules.json`, and `./agent-firewall.baseline.json` when those files exist in the server working directory.
+
 `baseline` can be either a full AgentFirewall baseline object or a direct list of finding IDs. Baseline findings are suppressed before the API returns a verdict, so host products can show failures only for newly introduced issues.
 
 Verdicts:

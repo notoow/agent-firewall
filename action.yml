@@ -27,7 +27,7 @@ inputs:
     required: false
     default: ""
   baseline:
-    description: Optional AgentFirewall baseline file whose finding IDs should be suppressed.
+    description: Optional AgentFirewall baseline override. Defaults to agent-firewall.baseline.json when present.
     required: false
     default: ""
   update-baseline:

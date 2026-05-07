@@ -6,9 +6,10 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP
 
 from agent_firewall.analyzer import analyze, redact_result
-from agent_firewall.baseline import apply_baseline, baseline_ids_from_data
+from agent_firewall.baseline import apply_baseline, baseline_ids_from_data, maybe_load_baseline
 from agent_firewall.policy import maybe_load_policy, policy_from_dict
 from agent_firewall.redaction import redact_text
+from agent_firewall.rulepack import maybe_load_rulepack, rules_from_any
 
 mcp = FastMCP(
     "agent-firewall",
@@ -32,8 +33,10 @@ def analyze_agent_security(payload: dict[str, Any]) -> dict[str, Any]:
     }
     """
     policy = policy_from_dict(payload.get("policy")) if payload.get("policy") is not None else maybe_load_policy()
-    result = redact_result(analyze(payload, policy=policy, custom_rules=payload.get("rules")))
-    return apply_baseline(result, baseline_ids_from_data(payload.get("baseline")), policy=policy).to_dict()
+    custom_rules = rules_from_any(payload.get("rules")) if payload.get("rules") is not None else maybe_load_rulepack()
+    baseline_ids = baseline_ids_from_data(payload.get("baseline")) if payload.get("baseline") is not None else maybe_load_baseline()
+    result = redact_result(analyze(payload, policy=policy, custom_rules=custom_rules))
+    return apply_baseline(result, baseline_ids, policy=policy).to_dict()
 
 
 @mcp.tool()
